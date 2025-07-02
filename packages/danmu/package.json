@@ -1,5 +1,5 @@
 {
-  "name": "@forward-widget/id",
+  "name": "@forward-widget/danmu",
   "version": "1.0.0",
   "type": "module",
   "exports": {
@@ -24,6 +24,10 @@
     "@rslib/core": "^0.9.1",
     "@rstest/core": "^0.0.4",
     "@types/node": "^22.15.21",
+    "@types/url-parse": "^1.4.11",
     "typescript": "^5.8.3"
+  },
+  "dependencies": {
+    "url-parse": "^1.5.10"
   }
 }

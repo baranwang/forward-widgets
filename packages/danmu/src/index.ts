@@ -1,3 +1,4 @@
+import parseUrl from 'url-parse';
 import { DOUBAN_API_KEY } from './constants';
 import type { Douban2VideoPlatformResponse } from './types';
 
@@ -79,20 +80,18 @@ export class IDBridge {
       if (vendor.is_ad) {
         continue;
       }
-      const uriObj = new URL(vendor.uri);
+      const uriObj = parseUrl(vendor.uri, true);
 
       switch (vendor.id) {
         case 'qq': {
-          const cid = uriObj.searchParams.get('cid');
-          const vid = uriObj.searchParams.get('vid');
+          const { cid, vid } = uriObj.query;
           if (cid && vid) {
             result.qq = { cid, vid };
           }
           break;
         }
         case 'iqiyi': {
-          const aid = uriObj.searchParams.get('aid');
-          const vid = uriObj.searchParams.get('vid');
+          const { aid, vid } = uriObj.query;
           if (aid && vid) {
             result.iqiyi = { aid, vid };
           }
@@ -100,7 +99,7 @@ export class IDBridge {
         }
 
         case 'youku': {
-          const showId = uriObj.searchParams.get('shosid');
+          const { showid: showId } = uriObj.query;
           if (showId) {
             result.youku = { showId };
           }
