@@ -1,0 +1,10 @@
+packages:
+  - 'packages/*'
+
+onlyBuiltDependencies:
+  - '@biomejs/biome'
+  - nx
+
+strictPeerDependencies: false
+autoInstallPeers: true
+hoistPattern: []

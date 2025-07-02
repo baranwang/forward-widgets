@@ -1,0 +1,12 @@
+{
+  "name": "@forward-widget/source",
+  "version": "0.0.0",
+  "license": "MIT",
+  "scripts": {},
+  "private": true,
+  "devDependencies": {
+    "@biomejs/biome": "^2.0.5",
+    "nx": "21.1.2"
+  },
+  "packageManager": "pnpm@10.12.4"
+}
