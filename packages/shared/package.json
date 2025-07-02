@@ -1,13 +1,13 @@
 {
-  "name": "@forward-widget/id",
+  "name": "@forward-widget/shared",
   "version": "1.0.0",
   "type": "module",
   "exports": {
-    ".": {
-      "types": "./dist/index.d.ts",
-      "import": "./dist/index.js",
-      "require": "./dist/index.cjs"
-    }
+    "./widget-adaptor": {
+      "types": "./dist/widget-adaptor.d.ts",
+      "import": "./dist/widget-adaptor.js"
+    },
+    "./env": "./dist/env.d.ts"
   },
   "main": "./dist/index.cjs",
   "types": "./dist/index.d.ts",
@@ -16,13 +16,13 @@
   ],
   "scripts": {
     "build": "rslib build",
-    "dev": "rslib build --watch",
-    "test": "rstest run"
+    "dev": "rslib build --watch"
+  },
+  "dependencies": {
+    "cheerio": "^1.1.0"
   },
   "devDependencies": {
-    "@forward-widget/shared": "workspace:*",
     "@rslib/core": "^0.9.1",
-    "@rstest/core": "^0.0.4",
     "@types/node": "^22.15.21",
     "typescript": "^5.8.3"
   }

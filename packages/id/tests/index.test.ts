@@ -1,29 +1,17 @@
-import { expect, test } from '@rstest/core';
+import { WidgetAdaptor } from '@forward-widget/shared/widget-adaptor';
+import { expect, rstest, test } from '@rstest/core';
 import { IDBridge } from '../src/index';
-import type { FetchAdapter } from '../src/types';
 
-test('imdb2douban', async () => {
-  const fetchAdapter: FetchAdapter = {
-    get: async <T>(url: string, options?: RequestInit) =>
-      fetch(url, { ...options, method: 'GET' }).then(async (res) => {
-        return {
-          data: (await res.json()) as T,
-          statusCode: res.status,
-          headers: Object.fromEntries(res.headers.entries()),
-        };
-      }),
-    post: async <T>(url: string, options?: RequestInit) =>
-      fetch(url, { ...options, method: 'POST' }).then(async (res) => {
-        return {
-          data: (await res.json()) as T,
-          statusCode: res.status,
-          headers: Object.fromEntries(res.headers.entries()),
-        };
-      }),
-  };
-  const idBridge = new IDBridge({ fetch: fetchAdapter });
+rstest.stubGlobal('Widget', WidgetAdaptor);
 
-  const result = await idBridge.imdb2douban('tt28151918');
+const idBridge = new IDBridge();
 
-  expect(result).toBe('35651341');
+test('imdb2douban', () => {
+  expect(idBridge.imdb2douban('tt28151918')).resolves.toHaveProperty('doubanId', '35651341');
+});
+
+test('douban2videoPlatform', () => {
+  const result = idBridge.douban2videoPlatform('35651341');
+  expect(result).resolves.toHaveProperty('mediaType', 'tv');
+  expect(result).resolves.toHaveProperty('qq.cid', 'mzc00200iyue5he');
 });

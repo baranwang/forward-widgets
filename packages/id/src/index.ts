@@ -1,16 +1,12 @@
 import { DOUBAN_API_KEY } from './constants';
-import type { Douban2VideoPlatformResponse, IDBridgeOptions } from './types';
-
-export type { IDBridgeOptions };
+import type { Douban2VideoPlatformResponse } from './types';
 
 export class IDBridge {
-  constructor(private readonly options: IDBridgeOptions) {}
-
   /**
    * IMDB ID 转 豆瓣 ID
    */
   async imdb2douban(imdbId: string) {
-    const response = await this.options.fetch.post<{
+    const response = await Widget.http.post<{
       id: string;
       rating: {
         min: number;
@@ -58,7 +54,7 @@ export class IDBridge {
    * 豆瓣 ID 转 各视频平台 ID
    */
   async douban2videoPlatform(doubanId: string) {
-    const response = await this.options.fetch.get<{
+    const response = await Widget.http.get<{
       is_tv: boolean;
       vendors: {
         id: string;
@@ -103,9 +99,18 @@ export class IDBridge {
           break;
         }
 
+        case 'youku': {
+          const showId = uriObj.searchParams.get('shosid');
+          if (showId) {
+            result.youku = { showId };
+          }
+          break;
+        }
+
         default:
           break;
       }
     }
+    return result;
   }
 }
