@@ -25,9 +25,9 @@ describe('idBridge', () => {
   });
 
   test('getTencentVideoInfoByCid', async () => {
-    const result = await idBridge.getTencentVideoInfoByCid('mzc00200iyue5he');
-    expect(result.length).toBe(35);
-    expect(result[0]).toHaveProperty('vid', 'k410187y6uq');
+    const results = await idBridge.getTencentVideoInfoByCid('mzc00200iyue5he');
+    expect(results.length).toBe(35);
+    expect(results[0]).toHaveProperty('vid', 'k410187y6uq');
   });
 });
 
@@ -35,5 +35,5 @@ describe('danmu', () => {
   test('getTencentDanmu', async () => {
     const result = await danmu.getTencentDanmu('k410187y6uq');
     console.log(result);
-  });
+  }, 0);
 });

@@ -137,12 +137,7 @@ class IDBridge {
     return result;
   }
 
-  async getTencentVideoInfoByCid(cid: string) {
-    const results = [];
-    let hasMore = true;
-    let page = 0;
-    const pageSize = 100;
-
+  private async getTencentVideoInfoByCidWithIterator(cid: string) {
     interface TencentVideoItem {
       item_params: {
         vid: string;
@@ -152,7 +147,8 @@ class IDBridge {
       };
     }
 
-    // 内部函数用于过滤数据
+    const pageSize = 100;
+
     const filterItemData = (item: TencentVideoItem) => {
       if (item.item_params.is_trailer === '1') {
         return false;
@@ -165,69 +161,84 @@ class IDBridge {
       return true;
     };
 
-    while (hasMore) {
-      const response = await Widget.http.post<{
-        data: {
-          module_list_datas: [
-            {
-              module_datas: [
+    return {
+      async *[Symbol.asyncIterator]() {
+        let hasMore = true;
+        let page = 0;
+
+        while (hasMore) {
+          const response = await Widget.http.post<{
+            data: {
+              module_list_datas: [
                 {
-                  item_data_lists: {
-                    item_datas: TencentVideoItem[];
-                  };
+                  module_datas: [
+                    {
+                      item_data_lists: {
+                        item_datas: TencentVideoItem[];
+                      };
+                    },
+                  ];
                 },
               ];
-            },
-          ];
-        };
-      }>(
-        'https://pbaccess.video.qq.com/trpc.universal_backend_service.page_server_rpc.PageServer/GetPageData?video_appid=3000010&vplatform=2',
-        {
-          headers: {
-            Referer: `https://v.qq.com/x/cover/${cid}.html`,
-            Cookie: 'video_platform=2; vversion_name=8.2.95',
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            page_params: {
-              req_from: 'web_vsite',
-              page_id: 'vsite_episode_list',
-              page_type: 'detail_operation',
-              id_type: '1',
-              detail_page_type: '1',
-              cid,
-              page_context: qs.stringify({
-                episode_begin: page * pageSize,
-                episode_end: (page + 1) * pageSize,
-                episode_step: pageSize,
-                page_num: page,
-                page_size: pageSize,
+            };
+          }>(
+            'https://pbaccess.video.qq.com/trpc.universal_backend_service.page_server_rpc.PageServer/GetPageData?video_appid=3000010&vplatform=2',
+            {
+              headers: {
+                Referer: `https://v.qq.com/x/cover/${cid}.html`,
+                Cookie: 'video_platform=2; vversion_name=8.2.95',
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({
+                page_params: {
+                  req_from: 'web_vsite',
+                  page_id: 'vsite_episode_list',
+                  page_type: 'detail_operation',
+                  id_type: '1',
+                  detail_page_type: '1',
+                  cid,
+                  page_context: qs.stringify({
+                    episode_begin: page * pageSize,
+                    episode_end: (page + 1) * pageSize,
+                    episode_step: pageSize,
+                    page_num: page,
+                    page_size: pageSize,
+                  }),
+                },
+                has_cache: 1,
               }),
             },
-            has_cache: 1,
-          }),
-        },
-      );
+          );
 
-      if (response.statusCode !== 200) {
-        throw new Error(`Failed to get Tencent video vid: ${response.statusCode}, ${JSON.stringify(response.data)}`);
-      }
+          if (response.statusCode !== 200) {
+            throw new Error(
+              `Failed to get Tencent video vid: ${response.statusCode}, ${JSON.stringify(response.data)}`,
+            );
+          }
 
-      const itemDatas =
-        response.data.data?.module_list_datas?.[0]?.module_datas?.[0]?.item_data_lists?.item_datas?.filter(
-          filterItemData,
-        );
+          const itemDatas =
+            response.data.data?.module_list_datas?.[0]?.module_datas?.[0]?.item_data_lists?.item_datas?.filter(
+              filterItemData,
+            );
+          if (!itemDatas?.length) {
+            hasMore = false;
+            break;
+          }
+          page += 1;
+          for (const item of itemDatas) {
+            yield item.item_params;
+          }
+        }
+      },
+    };
+  }
 
-      if (!itemDatas?.length) {
-        hasMore = false;
-        break;
-      }
-
-      // 直接收集结果
-      results.push(...itemDatas.map((item) => item.item_params));
-      page += 1;
+  async getTencentVideoInfoByCid(cid: string) {
+    const iterator = await this.getTencentVideoInfoByCidWithIterator(cid);
+    const results = [];
+    for await (const item of iterator) {
+      results.push(item);
     }
-
     return results;
   }
 }
