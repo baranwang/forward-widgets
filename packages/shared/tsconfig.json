@@ -2,14 +2,15 @@
   "compilerOptions": {
     "lib": ["ES2021"],
     "module": "ESNext",
-    "noEmit": true,
+    "noEmit": false,
     "strict": true,
     "skipLibCheck": true,
     "isolatedModules": true,
     "resolveJsonModule": true,
     "moduleResolution": "bundler",
     "useDefineForClassFields": true,
-    "allowImportingTsExtensions": true
+    "composite": true,
+    "declarationDir": "./dist",
   },
   "include": ["src"]
 }

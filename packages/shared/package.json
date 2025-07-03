@@ -3,11 +3,16 @@
   "version": "1.0.0",
   "type": "module",
   "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
     "./widget-adaptor": {
       "types": "./dist/widget-adaptor.d.ts",
       "import": "./dist/widget-adaptor.js"
     },
-    "./env": "./dist/env.d.ts"
+    "./env": "./dist/env.d.ts",
+    "./package.json": "./package.json"
   },
   "main": "./dist/index.cjs",
   "types": "./dist/index.d.ts",

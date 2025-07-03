@@ -1,12 +1,26 @@
+import { DOUBAN_API_KEY, MediaType, VideoPlatform } from '@forward-widget/shared';
 import parseUrl from 'url-parse';
-import { DOUBAN_API_KEY } from './constants';
 import type { Douban2VideoPlatformResponse } from './types';
 
 export class IDBridge {
+  async getTmdbExternalIds(type: MediaType, tmdbId: string) {
+    const response = await Widget.tmdb.get<{
+      imdb_id: string;
+      wikidata_id: string;
+      facebook_id: string;
+      instagram_id: string;
+      twitter_id: string;
+    }>(`/3/${type}/${tmdbId}/external_ids`);
+    if (response.statusCode !== 200) {
+      throw new Error(`Failed to convert TMDB ID to IMDB ID: ${response.statusCode}, ${JSON.stringify(response.data)}`);
+    }
+    return response.data;
+  }
+
   /**
    * IMDB ID 转 豆瓣 ID
    */
-  async imdb2douban(imdbId: string) {
+  async imdbToDouban(imdbId: string) {
     const response = await Widget.http.post<{
       id: string;
       rating: {
@@ -54,11 +68,11 @@ export class IDBridge {
   /**
    * 豆瓣 ID 转 各视频平台 ID
    */
-  async douban2videoPlatform(doubanId: string) {
+  async doubanToVideoPlatform(doubanId: string) {
     const response = await Widget.http.get<{
       is_tv: boolean;
       vendors: {
-        id: string;
+        id: VideoPlatform;
         is_ad: boolean;
         uri: string;
       }[];
@@ -74,7 +88,7 @@ export class IDBridge {
       );
     }
     const result: Douban2VideoPlatformResponse = {
-      mediaType: response.data.is_tv ? 'tv' : 'movie',
+      mediaType: response.data.is_tv ? MediaType.TV : MediaType.Movie,
     };
     for (const vendor of response.data.vendors) {
       if (vendor.is_ad) {
@@ -83,14 +97,14 @@ export class IDBridge {
       const uriObj = parseUrl(vendor.uri, true);
 
       switch (vendor.id) {
-        case 'qq': {
+        case VideoPlatform.腾讯视频: {
           const { cid, vid } = uriObj.query;
           if (cid && vid) {
             result.qq = { cid, vid };
           }
           break;
         }
-        case 'iqiyi': {
+        case VideoPlatform.爱奇艺: {
           const { aid, vid } = uriObj.query;
           if (aid && vid) {
             result.iqiyi = { aid, vid };
@@ -98,7 +112,7 @@ export class IDBridge {
           break;
         }
 
-        case 'youku': {
+        case VideoPlatform.优酷: {
           const { showid: showId } = uriObj.query;
           if (showId) {
             result.youku = { showId };
