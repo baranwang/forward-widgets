@@ -4,13 +4,13 @@ import path from 'node:path';
 import { load } from 'cheerio';
 
 const fetchFactory = (method: 'GET' | 'POST') => {
-  return async <T>(url: string, options?: RequestInit) =>
-    fetch(url, { ...options, method }).then(async (res) => {
-      let data: T;
+  return async <T>(url: string, options?: RequestInit) => {
+    return fetch(url, { ...options, method }).then(async (res) => {
+      let data = (await res.text()) as T;
       try {
-        data = (await res.json()) as T;
+        data = JSON.parse(data as string) as T;
       } catch (error) {
-        data = (await res.text()) as T;
+        console.error(error);
       }
       return {
         data,
@@ -18,6 +18,7 @@ const fetchFactory = (method: 'GET' | 'POST') => {
         headers: Object.fromEntries(res.headers),
       };
     });
+  };
 };
 
 const STORAGE_CONFIG = {

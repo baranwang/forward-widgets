@@ -7,7 +7,6 @@ export interface Douban2VideoPlatformResponse {
   mediaType: MediaType;
   qq?: {
     cid: string;
-    vid: string;
   };
   iqiyi?: {
     aid: string;

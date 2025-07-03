@@ -5,5 +5,19 @@
     "editor.codeActionsOnSave": {
       "source.fixAll": "explicit"
     }
-  }
+  },
+  "cSpell.words": [
+    "Danmu",
+    "TMDB",
+    "IMDB",
+    "Douban",
+    "iQIYI",
+    "Tencent",
+    "Bilibili",
+    "Youku",
+    "Migu",
+    "Kugou",
+    "Kuwo",
+    "Netease",
+  ]
 }

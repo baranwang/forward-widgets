@@ -10,7 +10,7 @@
     "moduleResolution": "bundler",
     "useDefineForClassFields": true,
     "baseUrl": ".",
-    "outDir": "dist",
+    "rootDir": "src",
     "composite": true,
     "declarationDir": "dist",
   },
