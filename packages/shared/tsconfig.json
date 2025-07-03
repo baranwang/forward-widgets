@@ -9,8 +9,10 @@
     "resolveJsonModule": true,
     "moduleResolution": "bundler",
     "useDefineForClassFields": true,
+    "baseUrl": ".",
+    "outDir": "dist",
     "composite": true,
-    "declarationDir": "./dist",
+    "declarationDir": "dist",
   },
   "include": ["src"]
 }
