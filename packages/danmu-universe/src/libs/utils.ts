@@ -1,23 +1,23 @@
-class WidgetStorage {
-  async getItem(key: string) {
-    console.log("Widget.storage.getItem not supported yet");
-  }
+import type * as z from "zod/mini";
 
-  async setItem(key: string, value: string) {
-    console.log("Widget.storage.setItem not supported yet");
-  }
-
-  async removeItem(key: string) {
-    console.log("Widget.storage.removeItem not supported yet");
-  }
-
-  async clear() {
-    console.log("Widget.storage.clear not supported yet");
-  }
-
-  async keys() {
-    console.log("Widget.storage.keys not supported yet");
+export function safeJsonParse<T>(json: string): T | null {
+  try {
+    if (!json) return null;
+    return JSON.parse(json);
+  } catch (e) {
+    return null;
   }
 }
 
-export const widgetStorage = new WidgetStorage();
+export function safeJsonParseWithZod<T extends z.ZodMiniObject | z.ZodMiniArray>(json: string, schema: T) {
+  const result = safeJsonParse(json);
+  if (!result) {
+    return null;
+  }
+  const { success, data, error } = schema.safeParse(result);
+  if (!success) {
+    console.warn(`Failed to parse JSON with Zod: ${json}`, error);
+    return null;
+  }
+  return data as T["_zod"]["output"];
+}

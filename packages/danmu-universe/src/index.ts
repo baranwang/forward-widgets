@@ -1,6 +1,7 @@
 import type { MediaType } from "./constants";
 import { getDoubanInfoByTmdbId, getVideoPlatformInfoByDoubanId } from "./libs/douban";
 import { TencentScraper } from "./scrapers/tencent";
+import { YoukuScraper } from "./scrapers/youku";
 
 WidgetMetadata = {
   id: "baranwang.danmu.universe",
@@ -69,13 +70,19 @@ getDetail = async (params) => {
     const scraper = new TencentScraper();
     return scraper.getEpisodes(response.qq.cid);
   }
+  if (response.youku) {
+    const scraper = new YoukuScraper();
+    return scraper.getEpisodes(response.youku.showId);
+  }
   return [];
 };
 
 getComments = async (params) => {
   const { commentId } = params;
+  const scraper = new TencentScraper();
+  const comments = await scraper.getComments(commentId);
   return {
-    comments: [],
-    count: 0,
+    comments,
+    count: comments.length,
   };
 };
