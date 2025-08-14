@@ -1,0 +1,32 @@
+{
+  "name": "@forward-widget/danmu-universe",
+  "version": "0.0.0",
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "types": "./dist/index.d.ts",
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "rslib build",
+    "dev": "rslib build --watch",
+    "test": "rstest"
+  },
+  "dependencies": {
+    "url-parse": "^1.5.10"
+  },
+  "devDependencies": {
+    "@forward-widget/libs": "^1.4.2",
+    "@forward-widget/rslib-plugin": "^1.4.2",
+    "@rslib/core": "^0.10.5",
+    "@rstest/core": "^0.1.3",
+    "@types/node": "^22.16.0",
+    "@types/url-parse": "^1.4.11",
+    "typescript": "^5.8.3"
+  }
+}
