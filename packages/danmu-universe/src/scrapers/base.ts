@@ -14,6 +14,15 @@ export interface ProviderEpisodeInfo {
   url?: string;
 }
 
+export enum CommentMode {
+  /** 滚动 */
+  SCROLL = 1,
+  /** 底部 */
+  BOTTOM = 4,
+  /** 顶部 */
+  TOP = 5,
+}
+
 export abstract class BaseScraper {
   abstract providerName: string;
 
@@ -21,32 +30,30 @@ export abstract class BaseScraper {
 
   abstract getComments(episodeId: string): Promise<CommentItem[]>;
 
-  protected fetch: Fetch;
+  protected fetch = new Fetch();
   protected limit = pLimit(3);
-
-  private _cookie: Record<string, string> = {};
-  private _headers: Record<string, string> = {};
-
-  get cookie() {
-    return this._cookie;
-  }
-  set cookie(value: Record<string, string>) {
-    this._cookie = value;
-    this.fetch.setCookie(value);
-  }
-  get headers() {
-    return this._headers;
-  }
-  set headers(value: Record<string, string>) {
-    this._headers = value;
-    this.fetch.setHeaders(value);
-  }
-
-  constructor() {
-    this.fetch = new Fetch(this._cookie, this._headers);
-  }
 
   protected sleep(ms: number) {
     return new Promise((resolve) => setTimeout(resolve, ms));
+  }
+
+  protected formatComment({
+    id,
+    timestamp,
+    mode,
+    color,
+    content,
+  }: {
+    id: string | number;
+    timestamp: number;
+    mode: CommentMode;
+    color: number;
+    content: string;
+  }): CommentItem {
+    return {
+      cid: id,
+      p: `${timestamp.toFixed(2)},${mode},${color},[${this.providerName}]`,
+      m: content,
+    } as CommentItem;
   }
 }

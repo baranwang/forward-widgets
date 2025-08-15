@@ -1,31 +1,27 @@
-import { groupBy } from "es-toolkit";
+import { groupBy, uniqBy } from "es-toolkit";
 import { qs } from "url-parse";
-import * as z from "zod/mini";
+import * as z from "zod";
 import { safeJsonParseWithZod } from "../libs/utils";
-import { BaseScraper } from "./base";
+import { BaseScraper, CommentMode } from "./base";
 
 const tencentEpisodeSchema = z.object({
-  vid: z.string().check(z.refine((val) => !!val)),
-  is_trailer: z.string().check(z.refine((val) => val !== "1")),
-  title: z.string().check(
-    z.refine((val) => {
-      const junkKeywords = ["预告", "彩蛋", "直拍", "直播回顾", "加更", "走心", "解忧", "纯享", "节点"];
-      for (const keyword of junkKeywords) {
-        if (val.includes(keyword)) {
-          return false;
-        }
-      }
-      return true;
-    }),
-  ),
-  union_title: z.optional(z.string()).check(
-    z.refine((val) => {
-      if (val?.includes("预告")) {
+  vid: z.string().refine((val) => !!val),
+  is_trailer: z.string().refine((val) => val !== "1"),
+  title: z.string().refine((val) => {
+    const junkKeywords = ["预告", "彩蛋", "直拍", "直播回顾", "加更", "走心", "解忧", "纯享", "节点"];
+    for (const keyword of junkKeywords) {
+      if (val.includes(keyword)) {
         return false;
       }
-      return true;
-    }),
-  ),
+    }
+    return true;
+  }),
+  union_title: z.optional(z.string()).refine((val) => {
+    if (val?.includes("预告")) {
+      return false;
+    }
+    return true;
+  }),
 });
 
 const tencentEpisodeResultSchema = z.object({
@@ -58,18 +54,18 @@ const tencentSegmentIndexSchema = z.object({
 });
 
 const tencentContentStyleSchema = z.object({
-  color: z.optional(z.string()),
-  position: z.optional(z.number()),
+  color: z.string().optional(),
+  position: z.number().optional(),
 });
 
 const tencentCommentItemSchema = z.object({
   id: z.string(),
   content: z.string(),
   time_offset: z.string(),
-  content_style: z.pipe(
-    z.optional(z.string()),
-    z.transform((v) => safeJsonParseWithZod(v ?? "", tencentContentStyleSchema)),
-  ),
+  content_style: z
+    .string()
+    .optional()
+    .transform((v) => safeJsonParseWithZod(v ?? "", tencentContentStyleSchema)),
 });
 
 const tencentSegmentSchema = z.object({
@@ -86,17 +82,17 @@ export class TencentScraper extends BaseScraper {
 
   constructor() {
     super();
-    this.cookie = {
+    this.fetch.setCookie({
       pgv_pvid: "40b67e3b06027f3d",
       video_platform: "2",
       vversion_name: "8.2.95",
       video_bucketid: "4",
       video_omgid: "0a1ff6bc9407c0b1cff86ee5d359614d",
-    };
-    this.headers = {
+    });
+    this.fetch.setHeaders({
       "User-Agent":
         "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36",
-    };
+    });
   }
 
   async getEpisodes(mediaId: string, episodeNumber?: number) {
@@ -134,13 +130,13 @@ export class TencentScraper extends BaseScraper {
     }
 
     // 按弹幕ID去重
-    const uniqueComments = Array.from(new Map(rawComments.map((c) => [c.id, c])).values());
+    const uniqueComments = uniqBy(rawComments, (c) => c.id);
 
     // 1. 按内容对弹幕进行分组
     const groupedByContent = groupBy(uniqueComments, (c) => c.content);
 
     // 2. 处理重复项
-    const processedComments: TencentCommentItem[] = [];
+    const processedComments: typeof uniqueComments = [];
     for (const group of Object.values(groupedByContent)) {
       if (group.length === 1) {
         processedComments.push(group[0]);
@@ -148,21 +144,21 @@ export class TencentScraper extends BaseScraper {
         const firstComment = group.reduce((earliest, current) => {
           return parseInt(current.time_offset, 10) < parseInt(earliest.time_offset, 10) ? current : earliest;
         });
-        firstComment.content = `${firstComment.content} ×${group.length}`;
+        firstComment.content = `${firstComment.content} × ${group.length}`;
         processedComments.push(firstComment);
       }
     }
 
     // 3. 格式化处理后的弹幕列表
-    const formattedComments = processedComments.map<CommentItem>((c) => {
-      let mode = 1; // 滚动
+    return processedComments.map<CommentItem>((c) => {
+      let mode = CommentMode.SCROLL; // 滚动
       let color = 16777215; // 白色
 
       if (c.content_style) {
         if (c.content_style.position === 2) {
-          mode = 5; // 顶部
+          mode = CommentMode.TOP; // 顶部
         } else if (c.content_style.position === 3) {
-          mode = 4; // 底部
+          mode = CommentMode.BOTTOM; // 底部
         }
 
         if (c.content_style.color) {
@@ -173,18 +169,14 @@ export class TencentScraper extends BaseScraper {
           }
         }
       }
-
-      const timestamp = parseInt(c.time_offset, 10) / 1000.0;
-      const p_string = `${timestamp.toFixed(2)},${mode},${color},[${this.providerName}]`;
-
-      return {
-        cid: c.id,
-        p: p_string,
-        m: c.content,
-      };
+      return this.formatComment({
+        id: c.id,
+        timestamp: parseInt(c.time_offset, 10) / 1000.0,
+        mode,
+        color,
+        content: c.content,
+      });
     });
-
-    return formattedComments;
   }
 
   /**
@@ -242,10 +234,6 @@ export class TencentScraper extends BaseScraper {
           },
         },
       );
-
-      if (response.statusCode !== 200) {
-        throw new Error(`Failed to get Tencent video vid: ${response.statusCode}, ${JSON.stringify(response.data)}`);
-      }
       const result = tencentEpisodeResultSchema.safeParse(response.data);
       if (!result.success) {
         throw new Error(`Failed to parse Tencent video vid: ${result.error}`);
@@ -282,23 +270,19 @@ export class TencentScraper extends BaseScraper {
     let segmentIndex: TencentSegmentIndex["segment_index"] = {};
 
     try {
-      const response = await this.fetch.get(`https://dm.video.qq.com/barrage/base/${vid}`);
-      if (response.statusCode !== 200) {
-        console.error(`获取腾讯弹幕索引失败 (vid=${vid}): ${response.statusCode}`);
+      const response = await this.fetch.get(`https://dm.video.qq.com/barrage/base/${vid}`, {
+        schema: tencentSegmentIndexSchema,
+      });
+
+      if (!response.data) {
         return [];
       }
 
-      const result = tencentSegmentIndexSchema.safeParse(response.data);
-      if (!result.success) {
-        console.error(`获取腾讯弹幕索引失败 (vid=${vid}): ${result.error}`);
-        return [];
-      }
-
-      if (!result.data?.segment_index) {
+      if (!response.data?.segment_index) {
         console.info(`vid='${vid}' 没有找到弹幕分段索引。`);
         return [];
       }
-      segmentIndex = result.data.segment_index;
+      segmentIndex = response.data.segment_index;
     } catch (e: any) {
       console.error(`获取弹幕索引失败 (vid=${vid})`, e);
       return [];
@@ -317,19 +301,11 @@ export class TencentScraper extends BaseScraper {
         }
 
         try {
-          const response = await this.fetch.get(`https://dm.video.qq.com/barrage/segment/${vid}/${segmentName}`);
-          if (response.statusCode !== 200) {
-            console.error(`获取分段 ${segmentName} 失败 (vid=${vid}): ${response.statusCode}`);
-            return [];
-          }
-          const result = tencentSegmentSchema.safeParse(response.data);
-          if (!result.success) {
-            console.error(`获取分段 ${segmentName} 失败 (vid=${vid}): ${result.error}`);
-            return [];
-          }
-
+          const response = await this.fetch.get(`https://dm.video.qq.com/barrage/segment/${vid}/${segmentName}`, {
+            schema: tencentSegmentSchema,
+          });
           const validComments: TencentCommentItem[] = [];
-          for (const commentItem of result.data?.barrage_list ?? []) {
+          for (const commentItem of response.data?.barrage_list ?? []) {
             if (commentItem.id && typeof commentItem.content === "string") {
               validComments.push(commentItem);
             } else {

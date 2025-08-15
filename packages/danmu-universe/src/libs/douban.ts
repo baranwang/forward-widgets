@@ -138,6 +138,18 @@ if (import.meta.rstest) {
     const response = await getDoubanInfoByImdbId("tt28151918");
     expect(response).toHaveProperty("doubanId", "35651341");
   });
+
+  test("getDoubanInfoByTmdbId", async () => {
+    const response = await getDoubanInfoByTmdbId(MediaType.Movie, "980477");
+    expect(response).toHaveProperty("doubanId", "34780991");
+  });
+
+  test("getVideoPlatformInfoByDoubanId", async () => {
+    const response = await getVideoPlatformInfoByDoubanId("34780991");
+    expect(response).toBeDefined();
+    expect(response).toHaveProperty("qq", { cid: "mzc00200tjkzeps" });
+    expect(response).toHaveProperty("youku", { showId: "cdee9099d49b4137918b" });
+  });
 }
 
 //#endregion

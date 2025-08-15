@@ -1,9 +1,11 @@
 import { merge } from "es-toolkit";
+import { z } from "zod";
 
 // 类型定义保持不变，它们已经很清晰了
 type BaseRequestOptions = NonNullable<Parameters<typeof Widget.http.get>[1]>;
-interface RequestOptions extends BaseRequestOptions {
+interface RequestOptions<T extends z.ZodType | undefined = undefined> extends BaseRequestOptions {
   timeout?: number;
+  schema?: T;
 }
 
 type HttpResponse<T> = Awaited<ReturnType<typeof Widget.http.get<T>>>;
@@ -22,6 +24,10 @@ export class Fetch {
     this.cookie = merge(this.cookie, cookie);
   }
 
+  getCookie(key: string) {
+    return this.cookie[key];
+  }
+
   /**
    * 设置或更新请求头，通过合并而非完全替换来避免数据丢失。
    * @param headers 要合并的请求头对象
@@ -34,11 +40,14 @@ export class Fetch {
    * 发起 GET 请求
    * @param url 请求地址
    * @param options 请求选项
-   * @returns Promise<HttpResponse<T>>
    */
+  async get<T extends z.ZodType>(
+    url: string,
+    options?: RequestOptions<T>,
+  ): Promise<HttpResponse<T["_zod"]["output"] | null>>;
   async get<T>(url: string, options?: RequestOptions): Promise<HttpResponse<T>> {
     const response = await this.executeRequest<T>("get", url, options);
-    return this.handleResponse<T>(response);
+    return this.handleResponse<T>(response, options?.schema);
   }
 
   /**
@@ -46,11 +55,15 @@ export class Fetch {
    * @param url 请求地址
    * @param body 请求体
    * @param options 请求选项
-   * @returns Promise<HttpResponse<T>>
    */
+  async post<T extends z.ZodType>(
+    url: string,
+    body: unknown,
+    options?: RequestOptions<T>,
+  ): Promise<HttpResponse<T["_zod"]["output"] | null>>;
   async post<T>(url: string, body: unknown, options?: RequestOptions): Promise<HttpResponse<T>> {
     const response = await this.executeRequest<T>("post", url, body, options);
-    return this.handleResponse<T>(response);
+    return this.handleResponse<T>(response, options?.schema);
   }
 
   /**
@@ -93,7 +106,7 @@ export class Fetch {
     const requestOptions: RequestOptions = ((isGet ? bodyOrOptions : options) as RequestOptions) ?? {};
     const body = isGet ? undefined : bodyOrOptions;
 
-    const { timeout, ...restOptions } = requestOptions;
+    const { timeout, schema: _, ...restOptions } = requestOptions;
     const headers = this.buildHeaders(restOptions.headers);
 
     const requestConfig = {
@@ -116,9 +129,9 @@ export class Fetch {
    * 请求结束后的处理逻辑，如解析 Set-Cookie
    * 使用箭头函数或 bind 来确保 `this` 上下文正确
    */
-  private handleResponse = <T>(response: HttpResponse<T>): HttpResponse<T> => {
-    // HTTP 头部字段名是大小写不敏感的，都转为小写来处理更稳妥
-    const setCookieHeader = response.headers["set-cookie"];
+  private handleResponse = <T>(response: HttpResponse<T>, schema?: z.ZodType): HttpResponse<T> => {
+    const setCookieHeader = response.headers["set-cookie"] || response.headers["Set-Cookie"];
+    console.log("headers", response.headers);
 
     if (setCookieHeader) {
       // Set-Cookie 可能是一个数组或单个字符串，统一处理
@@ -141,6 +154,16 @@ export class Fetch {
 
       // 使用 setCookie 方法更新，保持逻辑统一
       this.setCookie(newCookies);
+    }
+    if (schema) {
+      const result = schema.safeParse(response.data);
+      if (!result.success) {
+        console.error(`Failed to parse response with schema:`, z.prettifyError(result.error));
+      }
+      return {
+        ...response,
+        data: result.data as T,
+      };
     }
     return response;
   };

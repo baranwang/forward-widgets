@@ -1,16 +1,18 @@
 import md5 from "crypto-js/md5";
-import * as z from "zod/mini";
-import { BaseScraper, type ProviderEpisodeInfo } from "./base";
+import { groupBy, uniqBy } from "es-toolkit";
+import { z } from "zod";
+import { safeJsonParseWithZod } from "../libs/utils";
+import { BaseScraper, CommentMode, type ProviderEpisodeInfo } from "./base";
 
-const youkuEpisodeInfoSchema = z.pipe(
-  z.object({
+const youkuEpisodeInfoSchema = z
+  .object({
     id: z.string(),
     title: z.string(),
     duration: z.string(),
     category: z.string(),
     link: z.string(),
-  }),
-  z.transform((data) => {
+  })
+  .transform((data) => {
     return {
       ...data,
       get totalMat(): number {
@@ -22,12 +24,34 @@ const youkuEpisodeInfoSchema = z.pipe(
         }
       },
     };
-  }),
-);
+  });
 
 const youkuVideoResultSchema = z.object({
-  total: z.number(),
+  total: z.number().or(z.string().transform((v) => parseInt(v))),
   videos: z.array(youkuEpisodeInfoSchema),
+});
+
+const youkuCommentPropertySchema = z.object({
+  color: z.number().optional(),
+  pos: z.number().optional(),
+  size: z.number().optional(),
+});
+
+const youkuCommentSchema = z.object({
+  id: z.number(),
+  content: z.string(),
+  playat: z.number(), // milliseconds
+  propertis: z
+    .string()
+    .transform((v) => safeJsonParseWithZod(v, youkuCommentPropertySchema))
+    .optional(),
+  uid: z.string(),
+});
+
+const youkuDanmuResultSchema = z.object({
+  data: z.object({
+    result: z.array(youkuCommentSchema),
+  }),
 });
 
 type YoukuEpisodeInfo = z.infer<typeof youkuEpisodeInfoSchema>;
@@ -102,25 +126,58 @@ export class YoukuScraper extends BaseScraper {
     return providerEpisodes;
   }
 
-  async getComments(episodeId: string) {
+  async getComments(episodeId: string): Promise<CommentItem[]> {
+    // 处理episodeId格式（将下划线替换为等号）
+    const vid = episodeId.replace(/_/g, "=");
+
     try {
+      // 确保token和cookie已设置
+      await this.ensureTokenCookie();
+      // 获取视频基本信息
       const response = await this.fetch.get("https://openapi.youku.com/v2/videos/show_basic.json", {
         params: {
           client_id: "53e6cc67237fc59a",
           package: "com.huawei.hwvplayer.youku",
-          video_id: episodeId,
+          video_id: vid,
         },
+        schema: youkuEpisodeInfoSchema,
       });
-      const { success, data } = youkuEpisodeInfoSchema.safeParse(response.data);
-      if (!success) {
+
+      const episodeInfo = response.data;
+      if (!episodeInfo) {
+        console.warn(`Youku: Failed to get episode info for vid ${vid}`);
         return [];
       }
-      if (!data.totalMat) {
+
+      const totalMat = episodeInfo.totalMat;
+
+      if (totalMat === 0) {
+        console.warn(`Youku: Video ${vid} has duration 0, no danmaku to fetch.`);
         return [];
       }
-      const allComments = [];
-    } catch (error) {}
-    return [];
+
+      // 获取所有分段的弹幕
+      const allComments: z.infer<typeof youkuCommentSchema>[] = [];
+
+      for (let mat = 0; mat < totalMat; mat++) {
+        try {
+          const commentsInMat = await this.getDanmuContentByMat(vid, mat);
+          if (commentsInMat && commentsInMat.length > 0) {
+            allComments.push(...commentsInMat);
+          }
+          // 添加延时避免请求过于频繁
+          await this.sleep(200);
+        } catch (error) {
+          console.error(`Youku: Failed to get danmaku for vid ${vid} mat ${mat}:`, error);
+          // 继续获取其他分段
+        }
+      }
+
+      return this.formatComments(allComments);
+    } catch (error) {
+      console.error(`Youku: Failed to get danmaku for vid ${vid}:`, error);
+      return [];
+    }
   }
 
   private async getEpisodesPage(showId: string, page: number, pageSize: number) {
@@ -133,13 +190,9 @@ export class YoukuScraper extends BaseScraper {
         page: page.toString(),
         count: pageSize.toString(),
       },
+      schema: youkuVideoResultSchema,
     });
-
-    if (response.statusCode !== 200) {
-      throw new Error(`HTTP error! status: ${response.statusCode}`);
-    }
-
-    return youkuVideoResultSchema.parse(response.data);
+    return response.data;
   }
 
   private async getDanmuContentByMat(vid: string, mat: number) {
@@ -149,7 +202,7 @@ export class YoukuScraper extends BaseScraper {
     }
 
     const ctime = Date.now();
-    const msg: Record<string, any> = {
+    const msg: Record<string, string | number> = {
       pid: 0,
       ctype: 10004,
       sver: "3.1.0",
@@ -172,25 +225,32 @@ export class YoukuScraper extends BaseScraper {
     const dataPayload = JSON.stringify(msg);
     const t = Date.now().toString();
 
-    const params = new URLSearchParams({
-      jsv: "2.7.0",
-      appKey: appKey,
-      t: t,
-      sign: this.generateTokenSign(t, appKey, dataPayload),
-      api: "mopen.youku.danmu.list",
-      v: "1.0",
-      type: "originaljson",
-      dataType: "jsonp",
-      timeout: "20000",
-      jsonpIncPrefix: "utility",
-    });
+    const response = await this.fetch.post(
+      "https://acs.youku.com/h5/mopen.youku.danmu.list/1.0/",
+      { data: dataPayload },
+      {
+        params: {
+          jsv: "2.7.0",
+          appKey: appKey,
+          t: t,
+          sign: this.generateTokenSign(t, appKey, dataPayload),
+          api: "mopen.youku.danmu.list",
+          v: "1.0",
+          type: "originaljson",
+          dataType: "jsonp",
+          timeout: "20000",
+          jsonpIncPrefix: "utility",
+        },
+        headers: { Referer: "https://v.youku.com" },
+        schema: z.object({
+          data: z.object({
+            result: z.string().transform((v) => safeJsonParseWithZod(v, youkuDanmuResultSchema)),
+          }),
+        }),
+      },
+    );
 
-    const url = `https://acs.youku.com/h5/mopen.youku.danmu.list/1.0/?${params.toString()}`;
-
-    const response = await this.fetch.post(url, {
-      data: { data: dataPayload },
-      headers: { Referer: "https://v.youku.com" },
-    });
+    return response.data?.data.result?.data.result ?? [];
   }
 
   private generateMsgSign(msgEnc: string) {
@@ -200,4 +260,122 @@ export class YoukuScraper extends BaseScraper {
   private generateTokenSign(t: string, appKey: string, dataPayload: string) {
     return md5([this.token, t, appKey, dataPayload].join("&")).toString().toLowerCase();
   }
+
+  private formatComments(comments: z.infer<typeof youkuCommentSchema>[]): CommentItem[] {
+    if (!comments || comments.length === 0) {
+      return [];
+    }
+
+    // 按弹幕ID去重
+    const uniqueComments = uniqBy(comments, (c) => c.id);
+
+    // 按内容对弹幕进行分组
+    const groupedByContent = groupBy(uniqueComments, (c) => c.content);
+
+    // 处理重复项
+    const processedComments: typeof uniqueComments = [];
+    for (const group of Object.values(groupedByContent)) {
+      if (group.length === 1) {
+        processedComments.push(group[0]);
+      } else {
+        const firstComment = group.reduce((earliest, current) =>
+          current.playat < earliest.playat ? current : earliest,
+        );
+        processedComments.push({
+          ...firstComment,
+          content: `${firstComment.content} × ${group.length}`,
+        });
+      }
+    }
+
+    return processedComments.map((comment) => {
+      let mode = CommentMode.SCROLL;
+      let color = 16777215;
+
+      try {
+        const props = comment.propertis;
+
+        if (props) {
+          if (props.color) color = props.color;
+          if (props.pos === 1) mode = CommentMode.TOP;
+          else if (props.pos === 2) mode = CommentMode.BOTTOM;
+        }
+      } catch {
+        // 使用默认值
+      }
+
+      const timestamp = comment.playat / 1000.0;
+
+      return this.formatComment({
+        id: comment.id.toString(),
+        timestamp: timestamp,
+        mode: mode,
+        color: color,
+        content: comment.content,
+      });
+    });
+  }
+
+  /**
+   * 确保获取弹幕签名所需的 cna 和 _m_h5_tk cookie。
+   * 此逻辑严格参考了 Python 代码，并针对网络环境进行了优化。
+   */
+  private async ensureTokenCookie() {
+    // 步骤 1: 获取 'cna' cookie。它通常由优酷主站或其统计服务设置。
+    // 我们优先访问主站，因为它更不容易出网络问题。
+    let cnaVal = this.fetch.getCookie("cna");
+    if (!cnaVal) {
+      try {
+        console.debug("Youku: 'cna' cookie 未找到, 正在访问 youku.com 以获取...");
+        await this.fetch.get("https://www.youku.com/");
+        cnaVal = this.fetch.getCookie("cna");
+      } catch (error) {
+        console.warn(`Youku: 无法连接到 youku.com 获取 'cna' cookie。错误: ${error}`);
+      }
+    }
+    this.cna = cnaVal || "";
+
+    // 步骤 2: 获取 '_m_h5_tk' 令牌, 此请求可能依赖于 'cna' cookie 的存在。
+    let tokenVal = this.fetch.getCookie("_m_h5_tk");
+    if (!tokenVal) {
+      try {
+        console.debug("Youku: '_m_h5_tk' cookie 未找到, 正在从 acs.youku.com 请求...");
+        await this.fetch.get(
+          "https://acs.youku.com/h5/mtop.com.youku.aplatform.weakget/1.0/?jsv=2.5.1&appKey=24679788",
+        );
+        tokenVal = this.fetch.getCookie("_m_h5_tk");
+      } catch (error) {
+        console.error(`Youku: 无法连接到 acs.youku.com 获取令牌 cookie。弹幕获取很可能会失败。错误: ${error}`);
+      }
+    }
+
+    this.token = tokenVal ? tokenVal.split("_")[0] : "";
+
+    if (!this.cna || !this.token) {
+      console.warn(`Youku: 未能获取到弹幕签名所需的全部 cookie。 cna: '${this.cna}', token: '${this.token}'`);
+    }
+  }
+}
+
+if (import.meta.rstest) {
+  const { test, expect, rstest, beforeAll } = import.meta.rstest;
+
+  beforeAll(async () => {
+    const { WidgetAdaptor } = await import("@forward-widget/libs/widget-adaptor");
+    rstest.stubGlobal("Widget", WidgetAdaptor);
+  });
+
+  test("getEpisodes", async () => {
+    const scraper = new YoukuScraper();
+
+    const episodes = await scraper.getEpisodes("cdee9099d49b4137918b");
+    expect(episodes).toBeDefined();
+    expect(episodes.length).toBeGreaterThan(0);
+
+    const comments = await scraper.getComments(episodes[0].episodeId);
+    console.log(comments);
+    // const comments = await scraper.getComments("XNjQ4NTM3ODA4OA==");
+    // expect(comments).toBeDefined();
+    // expect(comments.length).toBeGreaterThan(0);
+  });
 }

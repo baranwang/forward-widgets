@@ -1,4 +1,4 @@
-import type * as z from "zod/mini";
+import type { z } from "zod";
 
 export function safeJsonParse<T>(json: string): T | null {
   try {
@@ -9,7 +9,7 @@ export function safeJsonParse<T>(json: string): T | null {
   }
 }
 
-export function safeJsonParseWithZod<T extends z.ZodMiniObject | z.ZodMiniArray>(json: string, schema: T) {
+export function safeJsonParseWithZod<T extends z.ZodType>(json: string, schema: T) {
   const result = safeJsonParse(json);
   if (!result) {
     return null;

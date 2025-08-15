@@ -66,10 +66,10 @@ getDetail = async (params) => {
   }
   const response = await getVideoPlatformInfoByDoubanId(doubanId.toString());
   console.log(response);
-  if (response.qq) {
-    const scraper = new TencentScraper();
-    return scraper.getEpisodes(response.qq.cid);
-  }
+  // if (response.qq) {
+  //   const scraper = new TencentScraper();
+  //   return scraper.getEpisodes(response.qq.cid);
+  // }
   if (response.youku) {
     const scraper = new YoukuScraper();
     return scraper.getEpisodes(response.youku.showId);
