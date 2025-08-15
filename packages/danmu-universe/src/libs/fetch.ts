@@ -1,19 +1,45 @@
-import { merge } from "es-toolkit";
+import { merge, omit } from "es-toolkit";
 import { z } from "zod";
 
-// 类型定义保持不变，它们已经很清晰了
 type BaseRequestOptions = NonNullable<Parameters<typeof Widget.http.get>[1]>;
 interface RequestOptions<T extends z.ZodType | undefined = undefined> extends BaseRequestOptions {
   timeout?: number;
+  successStatus?: number[];
   schema?: T;
+}
+
+// 请求上下文信息
+interface RequestContext {
+  url: string;
+  method: "GET" | "POST";
+  body?: unknown;
+  options?: RequestOptions;
+}
+
+// 自定义错误类
+class HttpStatusError extends Error {
+  constructor(
+    public statusCode: number,
+    public expectedStatus: number[],
+    public context: RequestContext,
+    public response: HttpResponse<unknown>,
+  ) {
+    super(`HTTP ${statusCode} - Expected: [${expectedStatus.join(", ")}] - ${context.method} ${context.url}`);
+    this.name = "HttpStatusError";
+
+    console.error(`🚫 HTTP Request Failed: ${context.method} ${context.url}`, "Status", statusCode);
+    if (context.body) console.error("Request Body:", JSON.stringify(context.body));
+    if (context.options) console.error("Request Options:", omit(context.options, ["schema", "successStatus"]));
+    console.error("Response:", { headers: response.headers, data: response.data });
+  }
 }
 
 type HttpResponse<T> = Awaited<ReturnType<typeof Widget.http.get<T>>>;
 
 export class Fetch {
   constructor(
-    private cookie: Record<string, string> = {},
-    private headers: Record<string, string> = {},
+    public cookie: Record<string, string> = {},
+    public headers: Record<string, string> = {},
   ) {}
 
   /**
@@ -46,8 +72,12 @@ export class Fetch {
     options?: RequestOptions<T>,
   ): Promise<HttpResponse<T["_zod"]["output"] | null>>;
   async get<T>(url: string, options?: RequestOptions): Promise<HttpResponse<T>> {
+    options ??= {};
+    options.headers ??= {};
+    options.headers = this.buildHeaders(options.headers);
     const response = await this.executeRequest<T>("get", url, options);
-    return this.handleResponse<T>(response, options?.schema);
+    const context: RequestContext = { url, method: "GET", options };
+    return this.handleResponse<T>(response, context, options?.schema, options?.successStatus);
   }
 
   /**
@@ -62,8 +92,12 @@ export class Fetch {
     options?: RequestOptions<T>,
   ): Promise<HttpResponse<T["_zod"]["output"] | null>>;
   async post<T>(url: string, body: unknown, options?: RequestOptions): Promise<HttpResponse<T>> {
+    options ??= {};
+    options.headers ??= {};
+    options.headers = this.buildHeaders(options.headers);
     const response = await this.executeRequest<T>("post", url, body, options);
-    return this.handleResponse<T>(response, options?.schema);
+    const context: RequestContext = { url, method: "POST", body, options };
+    return this.handleResponse<T>(response, context, options?.schema, options?.successStatus);
   }
 
   /**
@@ -107,16 +141,9 @@ export class Fetch {
     const body = isGet ? undefined : bodyOrOptions;
 
     const { timeout, schema: _, ...restOptions } = requestOptions;
-    const headers = this.buildHeaders(restOptions.headers);
 
-    const requestConfig = {
-      ...restOptions,
-      headers,
-    };
-
-    const requestPromise = isGet
-      ? Widget.http.get<T>(url, requestConfig)
-      : Widget.http.post<T>(url, body, requestConfig);
+    console.debug("fetch", url);
+    const requestPromise = isGet ? Widget.http.get<T>(url, restOptions) : Widget.http.post<T>(url, body, restOptions);
 
     if (timeout && timeout > 0) {
       return Promise.race([requestPromise, this.createTimeoutPromise(timeout)]);
@@ -125,19 +152,20 @@ export class Fetch {
     return requestPromise;
   }
 
-  /**
-   * 请求结束后的处理逻辑，如解析 Set-Cookie
-   * 使用箭头函数或 bind 来确保 `this` 上下文正确
-   */
-  private handleResponse = <T>(response: HttpResponse<T>, schema?: z.ZodType): HttpResponse<T> => {
+  private handleResponse = <T>(
+    response: HttpResponse<T>,
+    context: RequestContext,
+    schema?: z.ZodType,
+    successStatus?: number[],
+  ): HttpResponse<T> => {
+    if (successStatus?.length && !successStatus.includes(response.statusCode)) {
+      throw new HttpStatusError(response.statusCode, successStatus, context, response);
+    }
+
     const setCookieHeader = response.headers["set-cookie"] || response.headers["Set-Cookie"];
-    console.log("headers", response.headers);
 
     if (setCookieHeader) {
-      // Set-Cookie 可能是一个数组或单个字符串，统一处理
-      const cookies = Array.isArray(setCookieHeader) ? setCookieHeader : [setCookieHeader];
-
-      const newCookies = cookies.reduce(
+      const newCookies = setCookieHeader.split(",").reduce(
         (acc, cookieString) => {
           if (!cookieString) return acc;
           // 只取第一个 "key=value" 部分，忽略 expires, path 等属性
@@ -152,7 +180,6 @@ export class Fetch {
         {} as Record<string, string>,
       );
 
-      // 使用 setCookie 方法更新，保持逻辑统一
       this.setCookie(newCookies);
     }
     if (schema) {

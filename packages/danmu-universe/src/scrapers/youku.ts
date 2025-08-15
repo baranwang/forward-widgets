@@ -1,5 +1,6 @@
 import md5 from "crypto-js/md5";
 import { groupBy, uniqBy } from "es-toolkit";
+import { qs } from "url-parse";
 import { z } from "zod";
 import { safeJsonParseWithZod } from "../libs/utils";
 import { BaseScraper, CommentMode, type ProviderEpisodeInfo } from "./base";
@@ -61,8 +62,14 @@ export class YoukuScraper extends BaseScraper {
 
   private readonly EPISODE_BLACKLIST_KEYWORDS = ["彩蛋", "加更", "走心", "解忧", "纯享"];
 
-  private token = "";
-  private cna = "";
+  private get token() {
+    const tokenValue = this.fetch.getCookie("_m_h5_tk")?.split("_")[0] ?? "";
+    // C# 版本只使用前32个字符用于签名计算
+    return tokenValue.substring(0, 32);
+  }
+  private get cna() {
+    return this.fetch.getCookie("cna") ?? "";
+  }
 
   async getEpisodes(mediaId: string, episodeNumber?: number) {
     const allEpisodes: YoukuEpisodeInfo[] = [];
@@ -215,7 +222,7 @@ export class YoukuScraper extends BaseScraper {
       type: 1,
     };
 
-    const msgOrderedStr = JSON.stringify(Object.fromEntries(Object.entries(msg).sort()), null, 0);
+    const msgOrderedStr = JSON.stringify(Object.fromEntries(Object.entries(msg).sort()));
     const msgEnc = Buffer.from(msgOrderedStr, "utf-8").toString("base64");
 
     msg.msg = msgEnc;
@@ -225,32 +232,39 @@ export class YoukuScraper extends BaseScraper {
     const dataPayload = JSON.stringify(msg);
     const t = Date.now().toString();
 
-    const response = await this.fetch.post(
-      "https://acs.youku.com/h5/mopen.youku.danmu.list/1.0/",
-      { data: dataPayload },
-      {
-        params: {
-          jsv: "2.7.0",
-          appKey: appKey,
-          t: t,
-          sign: this.generateTokenSign(t, appKey, dataPayload),
-          api: "mopen.youku.danmu.list",
-          v: "1.0",
-          type: "originaljson",
-          dataType: "jsonp",
-          timeout: "20000",
-          jsonpIncPrefix: "utility",
-        },
-        headers: { Referer: "https://v.youku.com" },
-        schema: z.object({
-          data: z.object({
-            result: z.string().transform((v) => safeJsonParseWithZod(v, youkuDanmuResultSchema)),
+    try {
+      const response = await this.fetch.post(
+        "https://acs.youku.com/h5/mopen.youku.danmu.list/1.0/",
+        qs.stringify({ data: dataPayload }),
+        {
+          params: {
+            jsv: "2.7.0",
+            appKey: appKey,
+            t: t,
+            sign: this.generateTokenSign(t, appKey, dataPayload),
+            api: "mopen.youku.danmu.list",
+            v: "1.0",
+            type: "originaljson",
+            dataType: "jsonp",
+            timeout: "20000",
+            jsonpIncPrefix: "utility",
+          },
+          headers: { Referer: "https://v.youku.com", "Content-Type": "application/x-www-form-urlencoded" },
+          successStatus: [200],
+          schema: z.object({
+            data: z.object({
+              result: z.string().transform((v) => safeJsonParseWithZod(v, youkuDanmuResultSchema)),
+            }),
           }),
-        }),
-      },
-    );
-
-    return response.data?.data.result?.data.result ?? [];
+        },
+      );
+      const result = response.data?.data.result?.data.result ?? [];
+      console.log(`Youku: 获取到分段 ${mat} 的弹幕 ${result.length} 条`);
+      return result;
+    } catch (error) {
+      console.error(`Youku: 解析弹幕响应失败 (vid=${vid}, mat=${mat}):`, error);
+      return [];
+    }
   }
 
   private generateMsgSign(msgEnc: string) {
@@ -323,33 +337,26 @@ export class YoukuScraper extends BaseScraper {
   private async ensureTokenCookie() {
     // 步骤 1: 获取 'cna' cookie。它通常由优酷主站或其统计服务设置。
     // 我们优先访问主站，因为它更不容易出网络问题。
-    let cnaVal = this.fetch.getCookie("cna");
-    if (!cnaVal) {
+    if (!this.cna) {
       try {
         console.debug("Youku: 'cna' cookie 未找到, 正在访问 youku.com 以获取...");
-        await this.fetch.get("https://www.youku.com/");
-        cnaVal = this.fetch.getCookie("cna");
+        await this.fetch.get("https://log.mmstat.com/eg.js");
       } catch (error) {
         console.warn(`Youku: 无法连接到 youku.com 获取 'cna' cookie。错误: ${error}`);
       }
     }
-    this.cna = cnaVal || "";
 
     // 步骤 2: 获取 '_m_h5_tk' 令牌, 此请求可能依赖于 'cna' cookie 的存在。
-    let tokenVal = this.fetch.getCookie("_m_h5_tk");
-    if (!tokenVal) {
+    if (!this.token) {
       try {
         console.debug("Youku: '_m_h5_tk' cookie 未找到, 正在从 acs.youku.com 请求...");
         await this.fetch.get(
           "https://acs.youku.com/h5/mtop.com.youku.aplatform.weakget/1.0/?jsv=2.5.1&appKey=24679788",
         );
-        tokenVal = this.fetch.getCookie("_m_h5_tk");
       } catch (error) {
         console.error(`Youku: 无法连接到 acs.youku.com 获取令牌 cookie。弹幕获取很可能会失败。错误: ${error}`);
       }
     }
-
-    this.token = tokenVal ? tokenVal.split("_")[0] : "";
 
     if (!this.cna || !this.token) {
       console.warn(`Youku: 未能获取到弹幕签名所需的全部 cookie。 cna: '${this.cna}', token: '${this.token}'`);
@@ -365,17 +372,14 @@ if (import.meta.rstest) {
     rstest.stubGlobal("Widget", WidgetAdaptor);
   });
 
-  test("getEpisodes", async () => {
+  test("youku", async () => {
     const scraper = new YoukuScraper();
-
     const episodes = await scraper.getEpisodes("cdee9099d49b4137918b");
     expect(episodes).toBeDefined();
     expect(episodes.length).toBeGreaterThan(0);
 
     const comments = await scraper.getComments(episodes[0].episodeId);
-    console.log(comments);
-    // const comments = await scraper.getComments("XNjQ4NTM3ODA4OA==");
-    // expect(comments).toBeDefined();
-    // expect(comments.length).toBeGreaterThan(0);
+    expect(comments).toBeDefined();
+    expect(comments.length).toBeGreaterThan(0);
   });
 }
