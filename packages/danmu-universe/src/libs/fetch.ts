@@ -156,7 +156,7 @@ export class Fetch {
 
     const { timeout, schema: _, ...restOptions } = requestOptions;
 
-    console.debug("fetch", url);
+    console.debug("fetch", url, body, restOptions);
     const requestPromise = isGet ? Widget.http.get<T>(url, restOptions) : Widget.http.post<T>(url, body, restOptions);
 
     if (timeout && timeout > 0) {

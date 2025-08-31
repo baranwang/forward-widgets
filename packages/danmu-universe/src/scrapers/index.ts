@@ -31,7 +31,7 @@ export class Scraper {
     return segments;
   }
 
-  private findSegmentAtTime(segments: ProviderSegmentInfo[], segmentTime: number): ProviderSegmentInfo | null {
+  private findSegmentAtTime(segments: ProviderSegmentInfo[], time: number): ProviderSegmentInfo | null {
     if (!segments.length) return null;
     let low = 0;
     let high = segments.length - 1;
@@ -39,7 +39,7 @@ export class Scraper {
     while (low <= high) {
       const mid = (low + high) >> 1;
       const midStart = segments[mid].startTime;
-      if (midStart <= segmentTime) {
+      if (midStart <= time) {
         low = mid + 1;
       } else {
         high = mid - 1;
@@ -59,7 +59,7 @@ export class Scraper {
         (async () => {
           const segments = await this.getSegmentsByProvider(provider, videoId);
           if (!segments.length) return [];
-          const hit = this.findSegmentAtTime(segments, segmentTime);
+          const hit = this.findSegmentAtTime(segments, segmentTime * 1000);
           if (!hit) return [];
           return this.scraperMap[provider]?.getComments(videoId, hit.segmentId);
         })(),
@@ -98,6 +98,7 @@ export class Scraper {
         return [
           {
             ...results[0],
+            provider: "",
             episodeId,
           },
         ];

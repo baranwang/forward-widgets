@@ -33,17 +33,32 @@ interface GetDetailReturnType extends Array<GetDetailResponseItem> {
 declare let getDetail: (params: GetDetailParams) => GetDetailReturnType | Promise<GetDetailReturnType>;
 //#endregion getDetail
 
-//#region getDanmuWithSegmentTime
+//#region getComments
 /** Params of 获取弹幕 */
-interface GetDanmuWithSegmentTimeParams extends GlobalParams, BaseDanmuParams, GetDanmuWithSegmentTimeParams {
+interface GetCommentsParams extends GlobalParams, BaseDanmuParams, EpisodeItem {
 }
 
-interface GetDanmuWithSegmentTimeReturnType extends GetDanmuWithSegmentTimeResponse {
+interface GetCommentsReturnType extends GetCommentsResponse {
 }
 
 /**
  * 获取弹幕
  * @description 获取弹幕
  */
-declare let getDanmuWithSegmentTime: (params: GetDanmuWithSegmentTimeParams) => GetDanmuWithSegmentTimeReturnType | Promise<GetDanmuWithSegmentTimeReturnType>;
+declare let getComments: (params: GetCommentsParams) => GetCommentsReturnType | Promise<GetCommentsReturnType>;
+//#endregion getComments
+
+//#region getDanmuWithSegmentTime
+/** Params of 获取弹幕切片 */
+interface GetCommentsParams extends GlobalParams, BaseDanmuParams, GetDanmuWithSegmentTimeParams {
+}
+
+interface GetCommentsReturnType extends GetDanmuWithSegmentTimeResponse {
+}
+
+/**
+ * 获取弹幕切片
+ * @description 获取弹幕切片
+ */
+declare let getComments: (params: GetCommentsParams) => GetCommentsReturnType | Promise<GetCommentsReturnType>;
 //#endregion getDanmuWithSegmentTime

@@ -2,7 +2,6 @@ import md5 from "crypto-js/md5";
 import { groupBy, uniqBy } from "es-toolkit";
 import { qs } from "url-parse";
 import { z } from "zod";
-import { storage, TTL_30_MINUTES } from "../libs/storage";
 import { safeJsonParseWithZod } from "../libs/utils";
 import { BaseScraper, CommentMode, type ProviderEpisodeInfo } from "./base";
 
@@ -148,6 +147,9 @@ export class YoukuScraper extends BaseScraper {
           video_id: vid,
         },
         schema: youkuEpisodeInfoSchema,
+        cache: {
+          cacheKey: `youku:segments:${vid}`,
+        },
       });
       const episodeInfo = response.data;
       if (!episodeInfo) {
@@ -200,12 +202,15 @@ export class YoukuScraper extends BaseScraper {
         count: pageSize.toString(),
       },
       schema: youkuVideoResultSchema,
+      cache: {
+        cacheKey: `youku:episodes:${showId}:${page}:${pageSize}`,
+      },
     });
     return response.data;
   }
 
   private async getDanmuContentByMat(vid: string, mat: number) {
-    if (!this.token) {
+    if (!this.token || !this.cna) {
       console.error("Youku: Cannot get danmaku, _m_h5_tk is missing.");
       return [];
     }
@@ -252,13 +257,17 @@ export class YoukuScraper extends BaseScraper {
           },
           headers: { Referer: "https://v.youku.com", "Content-Type": "application/x-www-form-urlencoded" },
           successStatus: [200],
-          schema: z.object({
+          schema: z.looseObject({
             data: z.object({
-              result: z.string().transform((v) => safeJsonParseWithZod(v, youkuDanmuResultSchema)),
+              result: z
+                .string()
+                .transform((v) => safeJsonParseWithZod(v, youkuDanmuResultSchema))
+                .optional(),
             }),
           }),
         },
       );
+      console.error("Youku: response", response);
       const result = response.data?.data.result?.data.result ?? [];
       console.log(`Youku: 获取到分段 ${mat} 的弹幕 ${result.length} 条`);
       return result;
@@ -336,21 +345,6 @@ export class YoukuScraper extends BaseScraper {
    * 此逻辑严格参考了 Python 代码，并针对网络环境进行了优化。
    */
   private async ensureTokenCookie() {
-    const CNA_KEY = "youku:cna";
-    const TOKEN_KEY = "youku:_m_h5_tk";
-
-    // 优先从持久化缓存恢复 cookie，减少网络请求
-    try {
-      if (!this.cna) {
-        const cachedCna = await storage.get(CNA_KEY);
-        if (cachedCna) this.fetch.setCookie({ cna: cachedCna });
-      }
-      if (!this.fetch.getCookie("_m_h5_tk")) {
-        const cachedToken = await storage.get(TOKEN_KEY);
-        if (cachedToken) this.fetch.setCookie({ _m_h5_tk: cachedToken });
-      }
-    } catch {}
-
     // 步骤 1: 获取 'cna' cookie。它通常由优酷主站或其统计服务设置。
     // 我们优先访问主站，因为它更不容易出网络问题。
     if (!this.cna) {
@@ -377,14 +371,6 @@ export class YoukuScraper extends BaseScraper {
     if (!this.cna || !this.token) {
       console.warn(`Youku: 未能获取到弹幕签名所需的全部 cookie。 cna: '${this.cna}', token: '${this.token}'`);
     }
-
-    // 将最新 cookie 写入缓存
-    try {
-      const currentCna = this.fetch.getCookie("cna");
-      if (currentCna) await storage.set(CNA_KEY, currentCna, { ttl: TTL_30_MINUTES });
-      const currentToken = this.fetch.getCookie("_m_h5_tk");
-      if (currentToken) await storage.set(TOKEN_KEY, currentToken, { ttl: TTL_30_MINUTES });
-    } catch {}
   }
 }
 
@@ -402,7 +388,11 @@ if (import.meta.rstest) {
     expect(episodes).toBeDefined();
     expect(episodes.length).toBeGreaterThan(0);
 
-    const comments = await scraper.getComments(episodes[0].episodeId, "0");
+    const segments = await scraper.getSegments(episodes[0].episodeId);
+    expect(segments).toBeDefined();
+    expect(segments.length).toBeGreaterThan(0);
+
+    const comments = await scraper.getComments(episodes[0].episodeId, segments[0].segmentId);
     expect(comments).toBeDefined();
     expect(comments.length).toBeGreaterThan(0);
   });
