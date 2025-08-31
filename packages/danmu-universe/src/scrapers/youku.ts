@@ -2,6 +2,7 @@ import md5 from "crypto-js/md5";
 import { groupBy, uniqBy } from "es-toolkit";
 import { qs } from "url-parse";
 import { z } from "zod";
+import { storage, TTL_30_MINUTES } from "../libs/storage";
 import { safeJsonParseWithZod } from "../libs/utils";
 import { BaseScraper, CommentMode, type ProviderEpisodeInfo } from "./base";
 
@@ -133,8 +134,7 @@ export class YoukuScraper extends BaseScraper {
     return providerEpisodes;
   }
 
-  async getComments(episodeId: string): Promise<CommentItem[]> {
-    // 处理episodeId格式（将下划线替换为等号）
+  async getSegments(episodeId: string) {
     const vid = episodeId.replace(/_/g, "=");
 
     try {
@@ -149,7 +149,6 @@ export class YoukuScraper extends BaseScraper {
         },
         schema: youkuEpisodeInfoSchema,
       });
-
       const episodeInfo = response.data;
       if (!episodeInfo) {
         console.warn(`Youku: Failed to get episode info for vid ${vid}`);
@@ -163,24 +162,27 @@ export class YoukuScraper extends BaseScraper {
         return [];
       }
 
-      // 获取所有分段的弹幕
-      const allComments: z.infer<typeof youkuCommentSchema>[] = [];
+      return Array.from({ length: totalMat }, (_, i) => ({
+        provider: this.providerName,
+        startTime: i * 60 * 1000,
+        segmentId: i.toString(),
+      }));
+    } catch (error) {
+      console.error(`Youku: Failed to get segments for vid ${vid}:`, error);
+      return [];
+    }
+  }
 
-      for (let mat = 0; mat < totalMat; mat++) {
-        try {
-          const commentsInMat = await this.getDanmuContentByMat(vid, mat);
-          if (commentsInMat && commentsInMat.length > 0) {
-            allComments.push(...commentsInMat);
-          }
-          // 添加延时避免请求过于频繁
-          await this.sleep(200);
-        } catch (error) {
-          console.error(`Youku: Failed to get danmaku for vid ${vid} mat ${mat}:`, error);
-          // 继续获取其他分段
-        }
-      }
+  async getComments(episodeId: string, segmentId: string): Promise<CommentItem[]> {
+    // 处理episodeId格式（将下划线替换为等号）
+    const vid = episodeId.replace(/_/g, "=");
 
-      return this.formatComments(allComments);
+    try {
+      // 确保token和cookie已设置
+      await this.ensureTokenCookie();
+
+      const rawComments = await this.getDanmuContentByMat(vid, parseInt(segmentId, 10));
+      return this.formatComments(rawComments);
     } catch (error) {
       console.error(`Youku: Failed to get danmaku for vid ${vid}:`, error);
       return [];
@@ -208,13 +210,12 @@ export class YoukuScraper extends BaseScraper {
       return [];
     }
 
-    const ctime = Date.now();
     const msg: Record<string, string | number> = {
       pid: 0,
       ctype: 10004,
       sver: "3.1.0",
       cver: "v1.0",
-      ctime: ctime,
+      ctime: Date.now(),
       guid: this.cna,
       vid: vid,
       mat: mat,
@@ -335,6 +336,21 @@ export class YoukuScraper extends BaseScraper {
    * 此逻辑严格参考了 Python 代码，并针对网络环境进行了优化。
    */
   private async ensureTokenCookie() {
+    const CNA_KEY = "youku:cna";
+    const TOKEN_KEY = "youku:_m_h5_tk";
+
+    // 优先从持久化缓存恢复 cookie，减少网络请求
+    try {
+      if (!this.cna) {
+        const cachedCna = await storage.get(CNA_KEY);
+        if (cachedCna) this.fetch.setCookie({ cna: cachedCna });
+      }
+      if (!this.fetch.getCookie("_m_h5_tk")) {
+        const cachedToken = await storage.get(TOKEN_KEY);
+        if (cachedToken) this.fetch.setCookie({ _m_h5_tk: cachedToken });
+      }
+    } catch {}
+
     // 步骤 1: 获取 'cna' cookie。它通常由优酷主站或其统计服务设置。
     // 我们优先访问主站，因为它更不容易出网络问题。
     if (!this.cna) {
@@ -361,6 +377,14 @@ export class YoukuScraper extends BaseScraper {
     if (!this.cna || !this.token) {
       console.warn(`Youku: 未能获取到弹幕签名所需的全部 cookie。 cna: '${this.cna}', token: '${this.token}'`);
     }
+
+    // 将最新 cookie 写入缓存
+    try {
+      const currentCna = this.fetch.getCookie("cna");
+      if (currentCna) await storage.set(CNA_KEY, currentCna, { ttl: TTL_30_MINUTES });
+      const currentToken = this.fetch.getCookie("_m_h5_tk");
+      if (currentToken) await storage.set(TOKEN_KEY, currentToken, { ttl: TTL_30_MINUTES });
+    } catch {}
   }
 }
 
@@ -378,7 +402,7 @@ if (import.meta.rstest) {
     expect(episodes).toBeDefined();
     expect(episodes.length).toBeGreaterThan(0);
 
-    const comments = await scraper.getComments(episodes[0].episodeId);
+    const comments = await scraper.getComments(episodes[0].episodeId, "0");
     expect(comments).toBeDefined();
     expect(comments.length).toBeGreaterThan(0);
   });

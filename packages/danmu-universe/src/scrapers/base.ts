@@ -1,4 +1,3 @@
-import pLimit from "p-limit";
 import { Fetch } from "../libs/fetch";
 
 export interface ProviderEpisodeInfo {
@@ -12,6 +11,12 @@ export interface ProviderEpisodeInfo {
   episodeNumber: number;
   /** 分集原始URL */
   url?: string;
+}
+
+export interface ProviderSegmentInfo {
+  provider: string;
+  segmentId: string;
+  startTime: number;
 }
 
 export enum CommentMode {
@@ -28,10 +33,11 @@ export abstract class BaseScraper {
 
   abstract getEpisodes(mediaId: string, episodeIndex?: number): Promise<ProviderEpisodeInfo[]>;
 
-  abstract getComments(episodeId: string): Promise<CommentItem[]>;
+  abstract getSegments(episodeId: string): Promise<ProviderSegmentInfo[]>;
+
+  abstract getComments(episodeId: string, segmentId: string): Promise<CommentItem[]>;
 
   protected fetch = new Fetch();
-  protected limit = pLimit(3);
 
   protected sleep(ms: number) {
     return new Promise((resolve) => setTimeout(resolve, ms));

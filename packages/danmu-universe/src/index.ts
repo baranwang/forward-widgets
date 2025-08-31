@@ -1,7 +1,6 @@
 import type { MediaType } from "./constants";
-import { getDoubanInfoByTmdbId, getVideoPlatformInfoByDoubanId } from "./libs/douban";
-import { TencentScraper } from "./scrapers/tencent";
-import { YoukuScraper } from "./scrapers/youku";
+import { getDoubanInfoByTmdbId } from "./libs/douban";
+import { Scraper } from "./scrapers";
 
 WidgetMetadata = {
   id: "baranwang.danmu.universe",
@@ -27,13 +26,15 @@ WidgetMetadata = {
     },
     {
       type: "danmu",
-      id: "getComments",
+      id: "getDanmuWithSegmentTime",
       title: "获取弹幕",
-      functionName: "getComments",
+      functionName: "getDanmuWithSegmentTime",
       description: "获取弹幕",
     },
   ],
 };
+
+const scraper = new Scraper();
 
 searchDanmu = async (params) => {
   const { tmdbId, type: mediaType } = params;
@@ -55,32 +56,19 @@ searchDanmu = async (params) => {
 };
 
 getDetail = async (params) => {
-  const { animeId, tmdbId, type: mediaType } = params;
-  let doubanId = animeId;
-  if (!doubanId && tmdbId) {
-    const doubanInfo = await getDoubanInfoByTmdbId(mediaType as MediaType, tmdbId);
-    doubanId = doubanInfo?.doubanId ?? "";
-  }
-  if (!doubanId) {
-    return [];
-  }
-  const response = await getVideoPlatformInfoByDoubanId(doubanId.toString());
-  console.log(response);
-  // if (response.qq) {
-  //   const scraper = new TencentScraper();
-  //   return scraper.getEpisodes(response.qq.cid);
-  // }
-  if (response.youku) {
-    const scraper = new YoukuScraper();
-    return scraper.getEpisodes(response.youku.showId);
-  }
-  return [];
+  return scraper.getDetailWithDoubanId(params);
 };
 
-getComments = async (params) => {
-  const { commentId } = params;
-  const scraper = new TencentScraper();
-  const comments = await scraper.getComments(commentId);
+getDanmuWithSegmentTime = async (params) => {
+  const { commentId, segmentTime } = params;
+  let videoId = commentId;
+  if (!videoId) {
+    console.log("No video id, get episodes");
+    const episodes = await scraper.getDetailWithDoubanId(params);
+    videoId = episodes.map((item) => `${item.provider}:${item.episodeId}`).join(",");
+  }
+  console.log("Video id", videoId);
+  const comments = await scraper.getDanmuWithSegmentTimeByVideoId(videoId, segmentTime);
   return {
     comments,
     count: comments.length,

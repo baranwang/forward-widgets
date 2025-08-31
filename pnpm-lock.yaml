@@ -37,11 +37,11 @@ importers:
         version: 4.0.17
     devDependencies:
       '@forward-widget/libs':
-        specifier: ^1.5.1
-        version: 1.5.1
+        specifier: ^1.7.0
+        version: 1.7.0
       '@forward-widget/rslib-plugin':
-        specifier: ^1.5.1
-        version: 1.5.1
+        specifier: ^1.7.0
+        version: 1.7.0
       '@rslib/core':
         specifier: ^0.10.5
         version: 0.10.6(typescript@5.8.3)
@@ -191,11 +191,11 @@ packages:
   '@emnapi/wasi-threads@1.0.4':
     resolution: {integrity: sha512-PJR+bOmMOPH8AtcTGAyYNiuJ3/Fcoj2XN/gBEWzDIKh254XO+mM9XoXHk5GNEhodxeMznbg7BlRojVbKN+gC6g==}
 
-  '@forward-widget/libs@1.5.1':
-    resolution: {integrity: sha512-VKNBRGR+CrhvxJ97Wx5ugpbwTECLmJY/9Qz1FsohxjU/talHAof6RwEHIEeEfd5ZsEvW3lBTHD+lfrf3y/VGQw==}
+  '@forward-widget/libs@1.7.0':
+    resolution: {integrity: sha512-fbM/gdhq5rVXF9QD/Bwks8dRIxw/vn8Svmc+Ta3knvgwg3Pwa723komFXoMfdh66guiOS4rBQDKkx/5/fTTm3A==}
 
-  '@forward-widget/rslib-plugin@1.5.1':
-    resolution: {integrity: sha512-ul6GS67TsFG+Z1xNV2yC+HcLfl7Eerz+DDdpI9amO9tXBcONYoYftnvdMEOkT1hne64+GtZOIiReXVitx9IdUg==}
+  '@forward-widget/rslib-plugin@1.7.0':
+    resolution: {integrity: sha512-ZzyLjXuAABUOPKGapFnVV5hrYygcKjMqVszUI1FHrYmXaz+vo7O696YFgjT9S/X5Yz4QjVtL34gq4rVbXEiIEw==}
 
   '@hono/node-server@1.18.2':
     resolution: {integrity: sha512-icgNvC0vRYivzyuSSaUv9ttcwtN8fDyd1k3AOIBDJgYd84tXRZSS6na8X54CY/oYoFTNhEmZraW/Rb9XYwX4KA==}
@@ -777,11 +777,11 @@ snapshots:
       tslib: 2.8.1
     optional: true
 
-  '@forward-widget/libs@1.5.1':
+  '@forward-widget/libs@1.7.0':
     dependencies:
       cheerio: 1.1.2
 
-  '@forward-widget/rslib-plugin@1.5.1':
+  '@forward-widget/rslib-plugin@1.7.0':
     dependencies:
       '@hono/node-server': 1.18.2(hono@4.9.1)
       es-toolkit: 1.39.9

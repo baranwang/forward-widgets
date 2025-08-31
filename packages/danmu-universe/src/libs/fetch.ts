@@ -1,9 +1,14 @@
 import { merge, omit } from "es-toolkit";
 import { z } from "zod";
+import { storage } from "./storage";
 
 type BaseRequestOptions = NonNullable<Parameters<typeof Widget.http.get>[1]>;
 interface RequestOptions<T extends z.ZodType | undefined = undefined> extends BaseRequestOptions {
   timeout?: number;
+  cache?: {
+    cacheKey?: string;
+    ttl?: number;
+  };
   successStatus?: number[];
   schema?: T;
 }
@@ -75,9 +80,9 @@ export class Fetch {
     options ??= {};
     options.headers ??= {};
     options.headers = this.buildHeaders(options.headers);
-    const response = await this.executeRequest<T>("get", url, options);
+    const response = await this.executeRequest<T>("GET", url, options);
     const context: RequestContext = { url, method: "GET", options };
-    return this.handleResponse<T>(response, context, options?.schema, options?.successStatus);
+    return this.handleResponse<T>(response, context, options);
   }
 
   /**
@@ -95,9 +100,9 @@ export class Fetch {
     options ??= {};
     options.headers ??= {};
     options.headers = this.buildHeaders(options.headers);
-    const response = await this.executeRequest<T>("post", url, body, options);
+    const response = await this.executeRequest<T>("POST", url, body, options);
     const context: RequestContext = { url, method: "POST", body, options };
-    return this.handleResponse<T>(response, context, options?.schema, options?.successStatus);
+    return this.handleResponse<T>(response, context, options);
   }
 
   /**
@@ -130,14 +135,23 @@ export class Fetch {
   /**
    * 统一执行请求的核心逻辑
    */
-  private executeRequest<T>(
-    method: "get" | "post",
+  private async executeRequest<T>(
+    method: "GET" | "POST",
     url: string,
     bodyOrOptions?: unknown | RequestOptions,
     options?: RequestOptions,
   ): Promise<HttpResponse<T>> {
-    const isGet = method === "get";
+    const isGet = method === "GET";
     const requestOptions: RequestOptions = ((isGet ? bodyOrOptions : options) as RequestOptions) ?? {};
+    if (requestOptions.cache) {
+      const cacheKey = this.getCacheKey({ method, url }, requestOptions);
+      const cached = await storage.getJson<HttpResponse<T>>(cacheKey);
+      if (cached) {
+        console.debug("fetch cache hit", cacheKey);
+        return cached;
+      }
+    }
+
     const body = isGet ? undefined : bodyOrOptions;
 
     const { timeout, schema: _, ...restOptions } = requestOptions;
@@ -152,14 +166,13 @@ export class Fetch {
     return requestPromise;
   }
 
-  private handleResponse = <T>(
+  private handleResponse = async <T>(
     response: HttpResponse<T>,
     context: RequestContext,
-    schema?: z.ZodType,
-    successStatus?: number[],
-  ): HttpResponse<T> => {
-    if (successStatus?.length && !successStatus.includes(response.statusCode)) {
-      throw new HttpStatusError(response.statusCode, successStatus, context, response);
+    options?: RequestOptions,
+  ): Promise<HttpResponse<T>> => {
+    if (options?.successStatus?.length && !options.successStatus.includes(response.statusCode)) {
+      throw new HttpStatusError(response.statusCode, options.successStatus, context, response);
     }
 
     const setCookieHeader = response.headers["set-cookie"] || response.headers["Set-Cookie"];
@@ -182,10 +195,16 @@ export class Fetch {
 
       this.setCookie(newCookies);
     }
-    if (schema) {
-      const result = schema.safeParse(response.data);
+
+    if (options?.cache) {
+      const cacheKey = this.getCacheKey(context, options);
+      await storage.setJson(cacheKey, response, { ttl: options.cache.ttl });
+    }
+
+    if (options?.schema) {
+      const result = (options.schema as z.ZodType).safeParse(response.data);
       if (!result.success) {
-        console.error(`Failed to parse response with schema:`, z.prettifyError(result.error));
+        console.error(context.url, `Failed to parse response with schema:`, z.prettifyError(result.error));
       }
       return {
         ...response,
@@ -194,4 +213,12 @@ export class Fetch {
     }
     return response;
   };
+
+  private getCacheKey(context: RequestContext, options?: RequestOptions) {
+    let cacheKey = options?.cache?.cacheKey;
+    if (!cacheKey) {
+      cacheKey = `${context.method}#${context.url}`;
+    }
+    return cacheKey;
+  }
 }

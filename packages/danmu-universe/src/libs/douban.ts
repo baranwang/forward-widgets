@@ -1,31 +1,43 @@
 import parseUrl from "url-parse";
+import { z } from "zod";
 import { DOUBAN_API_KEY, MediaType, VideoPlatform } from "../constants";
+import { Fetch } from "./fetch";
+import { TTL_7_DAYS } from "./storage";
 import { getExternalIdsByTmdbId } from "./tmdb";
 import type { Douban2VideoPlatformResponse } from "./types";
+
+const fetch = new Fetch();
+
+const doubanImdbResponseSchema = z.object({
+  id: z.string(),
+  rating: z
+    .object({
+      min: z.number(),
+      max: z.number(),
+      average: z.string(),
+    })
+    .optional(),
+  title: z.string().optional(),
+  alt_title: z.string().optional(),
+  image: z.string().optional(),
+  summary: z.string().optional(),
+  attrs: z.record(z.string(), z.array(z.string())).optional(),
+  mobile_link: z.string().optional(),
+  tags: z
+    .array(
+      z.object({
+        count: z.number().optional(),
+        name: z.string().optional(),
+      }),
+    )
+    .optional(),
+});
 
 /**
  * 通过 IMDB ID 获取豆瓣信息
  */
 export const getDoubanInfoByImdbId = async (imdbId: string) => {
-  const response = await Widget.http.post<{
-    id: string;
-    rating: {
-      min: number;
-      max: number;
-      average: `${number}`;
-      numRaters: number;
-    };
-    title: string;
-    alt_title: string;
-    image: string;
-    summary: string;
-    attrs: Record<string, string[]>;
-    mobile_link: string;
-    tags: {
-      count: number;
-      name: string;
-    }[];
-  }>(
+  const response = await fetch.post(
     `https://api.douban.com/v2/movie/imdb/${imdbId}`,
     {
       apikey: DOUBAN_API_KEY,
@@ -34,14 +46,20 @@ export const getDoubanInfoByImdbId = async (imdbId: string) => {
       headers: {
         "Content-Type": "application/json",
       },
+      schema: doubanImdbResponseSchema,
+      cache: {
+        cacheKey: `douban:imdb:${imdbId}`,
+        ttl: TTL_7_DAYS,
+      },
     },
   );
+
   if (response.statusCode !== 200) {
     throw new Error(`Failed to get Douban info: ${response.statusCode}, ${JSON.stringify(response.data)}`);
   }
   const doubanId = response.data?.id?.split("/")?.pop();
   if (!doubanId) {
-    throw new Error(`Failed to extract Douban ID from response: ${response.data.id}`);
+    throw new Error(`Failed to extract Douban ID from response: ${response.data?.id}`);
   }
   if (/\d+/.test(doubanId)) {
     return {
@@ -64,30 +82,40 @@ export const getDoubanInfoByTmdbId = async (type: MediaType, tmdbId: string) => 
   return getDoubanInfoByImdbId(externalIds.imdb_id);
 };
 
+const doubanInfoResponseSchema = z.object({
+  is_tv: z.boolean().optional(),
+  vendors: z.array(
+    z.object({
+      id: z.string(),
+      is_ad: z.boolean().optional(),
+      uri: z.string(),
+    }),
+  ),
+});
+
 /**
  * 通过豆瓣 ID 获取视频平台信息
  */
 export const getVideoPlatformInfoByDoubanId = async (doubanId: string) => {
-  const response = await Widget.http.get<{
-    is_tv: boolean;
-    vendors: {
-      id: VideoPlatform;
-      is_ad: boolean;
-      uri: string;
-    }[];
-  }>(`https://m.douban.com/rexxar/api/v2/movie/${doubanId}?for_mobile=1`, {
+  const response = await fetch.get(`https://m.douban.com/rexxar/api/v2/movie/${doubanId}?for_mobile=1`, {
     headers: {
       Referer: `https://m.douban.com/movie/subject/${doubanId}/?dt_dapp=1`,
       "Content-Type": "application/json",
+    },
+    schema: doubanInfoResponseSchema,
+    cache: {
+      cacheKey: `douban:${doubanId}:info`,
+      ttl: TTL_7_DAYS,
     },
   });
   if (response.statusCode !== 200) {
     throw new Error(`Failed to get video platform info: ${response.statusCode}, ${JSON.stringify(response.data)}`);
   }
+
   const result: Douban2VideoPlatformResponse = {
-    mediaType: response.data.is_tv ? MediaType.TV : MediaType.Movie,
+    mediaType: response.data?.is_tv ? MediaType.TV : MediaType.Movie,
   };
-  for (const vendor of response.data.vendors) {
+  for (const vendor of response.data?.vendors ?? []) {
     if (vendor.is_ad) {
       continue;
     }

@@ -1,13 +1,25 @@
 import { MediaType } from "../constants";
+import { storage, TTL_7_DAYS } from "./storage";
 
-export const getExternalIdsByTmdbId = (type: MediaType, tmdbId: string) => {
-  return Widget.tmdb.get<{
-    imdb_id: string;
-    wikidata_id: string;
-    facebook_id: string;
-    instagram_id: string;
-    twitter_id: string;
-  }>(`/${type}/${tmdbId}/external_ids`);
+interface TmdbExternalIds {
+  imdb_id: string;
+  wikidata_id: string;
+  facebook_id: string;
+  instagram_id: string;
+  twitter_id: string;
+}
+
+export const getExternalIdsByTmdbId = async (type: MediaType, tmdbId: string) => {
+  let externalIds: TmdbExternalIds | null = null;
+  const CACHE_KEY = `tmdb:${type}:${tmdbId}:external_ids`;
+  const cached = await storage.getJson<TmdbExternalIds>(CACHE_KEY);
+  if (cached) {
+    externalIds = cached;
+  } else {
+    externalIds = await Widget.tmdb.get<TmdbExternalIds>(`/${type}/${tmdbId}/external_ids`);
+    await storage.setJson(CACHE_KEY, externalIds, { ttl: TTL_7_DAYS });
+  }
+  return externalIds;
 };
 
 //#region unit tests

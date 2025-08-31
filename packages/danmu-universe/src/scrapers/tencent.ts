@@ -1,6 +1,7 @@
 import { groupBy, uniqBy } from "es-toolkit";
 import { qs } from "url-parse";
-import * as z from "zod";
+import { z } from "zod";
+import { TTL_2_HOURS } from "../libs/storage";
 import { safeJsonParseWithZod } from "../libs/utils";
 import { BaseScraper, CommentMode } from "./base";
 
@@ -69,7 +70,17 @@ const tencentCommentItemSchema = z.object({
 });
 
 const tencentSegmentSchema = z.object({
-  barrage_list: z.array(tencentCommentItemSchema),
+  barrage_list: z
+    .array(
+      z.unknown().transform((v) => {
+        const { success, data } = tencentCommentItemSchema.safeParse(v);
+        if (success) {
+          return data;
+        }
+        return null;
+      }),
+    )
+    .transform((v) => v.filter((v) => v !== null)),
 });
 
 type TencentSegmentIndex = z.infer<typeof tencentSegmentIndexSchema>;
@@ -122,8 +133,45 @@ export class TencentScraper extends BaseScraper {
     return allProviderEpisodes;
   }
 
-  async getComments(episodeId: string) {
-    const rawComments = await this.internalGetComments(episodeId);
+  async getSegments(vid: string) {
+    let segmentIndex: TencentSegmentIndex["segment_index"] = {};
+    try {
+      const response = await this.fetch.get(`https://dm.video.qq.com/barrage/base/${vid}`, {
+        schema: tencentSegmentIndexSchema,
+        cache: {
+          cacheKey: `tencent:segment:${vid}`,
+          ttl: TTL_2_HOURS,
+        },
+      });
+
+      if (!response.data) {
+        return [];
+      }
+
+      if (!response.data?.segment_index) {
+        console.info(`vid='${vid}' 没有找到弹幕分段索引。`);
+        return [];
+      }
+      segmentIndex = response.data.segment_index;
+    } catch (e: any) {
+      console.error(`获取弹幕索引失败 (vid=${vid})`, e);
+      return [];
+    }
+
+    const sortedKeys = Object.keys(segmentIndex).sort((a, b) => parseInt(a, 10) - parseInt(b, 10));
+    console.debug(`为 vid='${vid}' 找到 ${sortedKeys.length} 个弹幕分段`);
+
+    return sortedKeys.map((key) => {
+      return {
+        provider: this.providerName,
+        startTime: parseInt(key, 10),
+        segmentId: segmentIndex[key]?.segment_name,
+      };
+    });
+  }
+
+  async getComments(episodeId: string, segmentId: string) {
+    const rawComments = await this.internalGetComments(episodeId, segmentId);
 
     if (!rawComments || rawComments.length === 0) {
       return [];
@@ -232,14 +280,14 @@ export class TencentScraper extends BaseScraper {
           headers: {
             "Content-Type": "application/json",
           },
+          schema: tencentEpisodeResultSchema,
+          cache: {
+            cacheKey: `tencent:episodes:${cid}:${page}`,
+          },
         },
       );
-      const result = tencentEpisodeResultSchema.safeParse(response.data);
-      if (!result.success) {
-        throw new Error(`Failed to parse Tencent video vid: ${result.error}`);
-      }
-
-      const itemDatas = result.data.data?.module_list_datas?.[0]?.module_datas?.[0]?.item_data_lists?.item_datas ?? [];
+      const itemDatas =
+        response.data?.data?.module_list_datas?.[0]?.module_datas?.[0]?.item_data_lists?.item_datas ?? [];
       if (itemDatas.length >= pageSize) {
         page += 1;
         pageContext = qs.stringify({
@@ -263,71 +311,19 @@ export class TencentScraper extends BaseScraper {
     return results;
   }
 
-  private async internalGetComments(vid: string): Promise<TencentCommentItem[]> {
-    const allComments: TencentCommentItem[] = [];
-
-    // 1. 获取弹幕分段索引
-    let segmentIndex: TencentSegmentIndex["segment_index"] = {};
-
+  private async internalGetComments(vid: string, segmentId: string): Promise<TencentCommentItem[]> {
     try {
-      const response = await this.fetch.get(`https://dm.video.qq.com/barrage/base/${vid}`, {
-        schema: tencentSegmentIndexSchema,
+      const response = await this.fetch.get(`https://dm.video.qq.com/barrage/segment/${vid}/${segmentId}`, {
+        schema: tencentSegmentSchema,
+        cache: {
+          cacheKey: `tencent:comments:${vid}:${segmentId}`,
+        },
       });
-
-      if (!response.data) {
-        return [];
-      }
-
-      if (!response.data?.segment_index) {
-        console.info(`vid='${vid}' 没有找到弹幕分段索引。`);
-        return [];
-      }
-      segmentIndex = response.data.segment_index;
+      return response.data?.barrage_list ?? [];
     } catch (e: any) {
-      console.error(`获取弹幕索引失败 (vid=${vid})`, e);
+      console.error(`获取分段 ${segmentId} 失败 (vid=${vid}): ${e.message}`, e);
       return [];
     }
-
-    // 2. 遍历分段，获取弹幕内容
-    const sortedKeys = Object.keys(segmentIndex).sort((a, b) => parseInt(a, 10) - parseInt(b, 10));
-    console.debug(`为 vid='${vid}' 找到 ${sortedKeys.length} 个弹幕分段，开始获取...`);
-
-    const segmentTasks = sortedKeys.map((key) =>
-      this.limit(async () => {
-        const segment = segmentIndex[key];
-        const segmentName = segment.segment_name;
-        if (!segmentName) {
-          return [];
-        }
-
-        try {
-          const response = await this.fetch.get(`https://dm.video.qq.com/barrage/segment/${vid}/${segmentName}`, {
-            schema: tencentSegmentSchema,
-          });
-          const validComments: TencentCommentItem[] = [];
-          for (const commentItem of response.data?.barrage_list ?? []) {
-            if (commentItem.id && typeof commentItem.content === "string") {
-              validComments.push(commentItem);
-            } else {
-              console.warn(`跳过一个无效的弹幕项目: ${JSON.stringify(commentItem)}`);
-            }
-          }
-          return validComments;
-        } catch (e: any) {
-          console.error(`获取分段 ${segmentName} 失败 (vid=${vid}): ${e.message}`, e);
-          return [];
-        }
-      }),
-    );
-
-    const segmentResults = await Promise.all(segmentTasks);
-    for (const comments of segmentResults) {
-      allComments.push(...comments);
-    }
-
-    console.info(`vid='${vid}' 弹幕获取完成，共 ${allComments.length} 条。`);
-
-    return allComments;
   }
 }
 
@@ -339,17 +335,18 @@ if (import.meta.rstest) {
     rstest.stubGlobal("Widget", WidgetAdaptor);
   });
 
-  test("getEpisodes", async () => {
+  test("tencent", async () => {
     const scraper = new TencentScraper();
     const episodes = await scraper.getEpisodes("mzc00200tjkzeps");
     expect(episodes).toBeDefined();
     expect(episodes.length).toBe(1);
     expect(episodes[0].episodeId).toBe("y4101qnn3jo");
-  });
 
-  test("getComments", async () => {
-    const scraper = new TencentScraper();
-    const comments = await scraper.getComments("y4101qnn3jo");
+    const segments = await scraper.getSegments("y4101qnn3jo");
+    expect(segments).toBeDefined();
+    expect(segments.length).toBeGreaterThan(0);
+
+    const comments = await scraper.getComments("y4101qnn3jo", segments[0].segmentId);
     expect(comments).toBeDefined();
     expect(comments.length).toBeGreaterThan(0);
   });
