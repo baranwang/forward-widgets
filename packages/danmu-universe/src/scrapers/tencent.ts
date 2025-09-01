@@ -1,4 +1,3 @@
-import { groupBy, uniqBy } from "es-toolkit";
 import { qs } from "url-parse";
 import { z } from "zod";
 import { TTL_2_HOURS } from "../libs/storage";
@@ -164,7 +163,7 @@ export class TencentScraper extends BaseScraper {
     return sortedKeys.map((key) => {
       return {
         provider: this.providerName,
-        startTime: parseInt(key, 10),
+        startTime: parseInt(key, 10) / 1000.0,
         segmentId: segmentIndex[key]?.segment_name,
       };
     });
@@ -177,31 +176,9 @@ export class TencentScraper extends BaseScraper {
       return [];
     }
 
-    // 按弹幕ID去重
-    const uniqueComments = uniqBy(rawComments, (c) => c.id);
-
-    // 1. 按内容对弹幕进行分组
-    const groupedByContent = groupBy(uniqueComments, (c) => c.content);
-
-    // 2. 处理重复项
-    const processedComments: typeof uniqueComments = [];
-    for (const group of Object.values(groupedByContent)) {
-      if (group.length === 1) {
-        processedComments.push(group[0]);
-      } else {
-        const firstComment = group.reduce((earliest, current) => {
-          return parseInt(current.time_offset, 10) < parseInt(earliest.time_offset, 10) ? current : earliest;
-        });
-        firstComment.content = `${firstComment.content} × ${group.length}`;
-        processedComments.push(firstComment);
-      }
-    }
-
-    // 3. 格式化处理后的弹幕列表
-    return processedComments.map<CommentItem>((c) => {
+    return this.formatComments(rawComments, (c) => {
       let mode = CommentMode.SCROLL; // 滚动
       let color = 16777215; // 白色
-
       if (c.content_style) {
         if (c.content_style.position === 2) {
           mode = CommentMode.TOP; // 顶部
@@ -217,13 +194,13 @@ export class TencentScraper extends BaseScraper {
           }
         }
       }
-      return this.formatComment({
+      return {
         id: c.id,
         timestamp: parseInt(c.time_offset, 10) / 1000.0,
         mode,
         color,
         content: c.content,
-      });
+      };
     });
   }
 

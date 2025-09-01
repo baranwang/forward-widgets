@@ -15,7 +15,9 @@ export interface ProviderEpisodeInfo {
 
 export interface ProviderSegmentInfo {
   provider: string;
+  /** 分段ID */
   segmentId: string;
+  /** 分段开始时间(秒) */
   startTime: number;
 }
 
@@ -26,6 +28,18 @@ export enum CommentMode {
   BOTTOM = 4,
   /** 顶部 */
   TOP = 5,
+}
+
+interface ProviderCommentItem {
+  id: string | number;
+  /** 弹幕时间戳(秒) */
+  timestamp: number;
+  /** 弹幕模式 */
+  mode: CommentMode;
+  /** 弹幕颜色 */
+  color: number;
+  /** 弹幕内容 */
+  content: string;
 }
 
 export abstract class BaseScraper {
@@ -43,23 +57,43 @@ export abstract class BaseScraper {
     return new Promise((resolve) => setTimeout(resolve, ms));
   }
 
-  protected formatComment({
-    id,
-    timestamp,
-    mode,
-    color,
-    content,
-  }: {
-    id: string | number;
-    timestamp: number;
-    mode: CommentMode;
-    color: number;
-    content: string;
-  }): CommentItem {
-    return {
-      cid: id,
-      p: `${timestamp.toFixed(2)},${mode},${color},[${this.providerName}]`,
-      m: content,
-    } as CommentItem;
+  protected formatComments<T>(
+    rawComments: T[],
+    transformer: (item: T, index: number, array: T[]) => ProviderCommentItem,
+  ): CommentItem[] {
+    const seenIds = new Set<string | number>();
+    const contentMap = new Map<string, { item: ProviderCommentItem; count: number }>();
+
+    let index = 0;
+    for (const raw of rawComments) {
+      const item = transformer(raw, index, rawComments);
+      index += 1;
+
+      if (seenIds.has(item.id)) continue;
+      seenIds.add(item.id);
+
+      const key = item.content;
+      const existing = contentMap.get(key);
+      if (!existing) {
+        contentMap.set(key, { item, count: 1 });
+      } else {
+        if (item.timestamp < existing.item.timestamp) {
+          existing.item = item;
+        }
+        existing.count += 1;
+      }
+    }
+
+    const result: CommentItem[] = [];
+    contentMap.forEach(({ item, count }) => {
+      const content = count > 1 ? `${item.content} × ${count}` : item.content;
+      result.push({
+        cid: item.id,
+        p: `${item.timestamp.toFixed(2)},${item.mode},${item.color},[${this.providerName}]` as CommentItem["p"],
+        m: content,
+      });
+    });
+
+    return result;
   }
 }

@@ -28,6 +28,7 @@ class Storage {
     const result = safeJsonParseWithZod(value, StorageValue);
     if (!result) return null;
     if (result?.expiresAt < Date.now()) {
+      await Widget.storage.set(key, "");
       return null;
     }
     return result.value;

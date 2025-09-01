@@ -1,5 +1,6 @@
-import md5 from "crypto-js/md5";
-import { groupBy, uniqBy } from "es-toolkit";
+import Base64 from "crypto-js/enc-base64";
+import Utf8 from "crypto-js/enc-utf8";
+import MD5 from "crypto-js/md5";
 import { qs } from "url-parse";
 import { z } from "zod";
 import { safeJsonParseWithZod } from "../libs/utils";
@@ -166,7 +167,7 @@ export class YoukuScraper extends BaseScraper {
 
       return Array.from({ length: totalMat }, (_, i) => ({
         provider: this.providerName,
-        startTime: i * 60 * 1000,
+        startTime: i * 60,
         segmentId: i.toString(),
       }));
     } catch (error) {
@@ -183,8 +184,7 @@ export class YoukuScraper extends BaseScraper {
       // 确保token和cookie已设置
       await this.ensureTokenCookie();
 
-      const rawComments = await this.getDanmuContentByMat(vid, parseInt(segmentId, 10));
-      return this.formatComments(rawComments);
+      return this.getDanmuContentByMat(vid, parseInt(segmentId, 10));
     } catch (error) {
       console.error(`Youku: Failed to get danmaku for vid ${vid}:`, error);
       return [];
@@ -229,7 +229,7 @@ export class YoukuScraper extends BaseScraper {
     };
 
     const msgOrderedStr = JSON.stringify(Object.fromEntries(Object.entries(msg).sort()));
-    const msgEnc = Buffer.from(msgOrderedStr, "utf-8").toString("base64");
+    const msgEnc = Base64.stringify(Utf8.parse(msgOrderedStr));
 
     msg.msg = msgEnc;
     msg.sign = this.generateMsgSign(msgEnc);
@@ -267,10 +267,38 @@ export class YoukuScraper extends BaseScraper {
           }),
         },
       );
-      console.error("Youku: response", response);
+
       const result = response.data?.data.result?.data.result ?? [];
       console.log(`Youku: 获取到分段 ${mat} 的弹幕 ${result.length} 条`);
-      return result;
+
+      if (!result || result.length === 0) {
+        return [];
+      }
+      return this.formatComments(result, (comment) => {
+        let mode = CommentMode.SCROLL;
+        let color = 16777215;
+
+        try {
+          const props = comment.propertis;
+
+          if (props) {
+            if (props.color) color = props.color;
+            if (props.pos === 1) mode = CommentMode.TOP;
+            else if (props.pos === 2) mode = CommentMode.BOTTOM;
+          }
+        } catch {
+          // 使用默认值
+        }
+
+        const timestamp = comment.playat / 1000.0;
+        return {
+          id: comment.id.toString(),
+          timestamp: timestamp,
+          mode: mode,
+          color: color,
+          content: comment.content,
+        };
+      });
     } catch (error) {
       console.error(`Youku: 解析弹幕响应失败 (vid=${vid}, mat=${mat}):`, error);
       return [];
@@ -278,66 +306,11 @@ export class YoukuScraper extends BaseScraper {
   }
 
   private generateMsgSign(msgEnc: string) {
-    return md5(`${msgEnc}MkmC9SoIw6xCkSKHhJ7b5D2r51kBiREr`).toString().toLowerCase();
+    return MD5(`${msgEnc}MkmC9SoIw6xCkSKHhJ7b5D2r51kBiREr`).toString().toLowerCase();
   }
 
   private generateTokenSign(t: string, appKey: string, dataPayload: string) {
-    return md5([this.token, t, appKey, dataPayload].join("&")).toString().toLowerCase();
-  }
-
-  private formatComments(comments: z.infer<typeof youkuCommentSchema>[]): CommentItem[] {
-    if (!comments || comments.length === 0) {
-      return [];
-    }
-
-    // 按弹幕ID去重
-    const uniqueComments = uniqBy(comments, (c) => c.id);
-
-    // 按内容对弹幕进行分组
-    const groupedByContent = groupBy(uniqueComments, (c) => c.content);
-
-    // 处理重复项
-    const processedComments: typeof uniqueComments = [];
-    for (const group of Object.values(groupedByContent)) {
-      if (group.length === 1) {
-        processedComments.push(group[0]);
-      } else {
-        const firstComment = group.reduce((earliest, current) =>
-          current.playat < earliest.playat ? current : earliest,
-        );
-        processedComments.push({
-          ...firstComment,
-          content: `${firstComment.content} × ${group.length}`,
-        });
-      }
-    }
-
-    return processedComments.map((comment) => {
-      let mode = CommentMode.SCROLL;
-      let color = 16777215;
-
-      try {
-        const props = comment.propertis;
-
-        if (props) {
-          if (props.color) color = props.color;
-          if (props.pos === 1) mode = CommentMode.TOP;
-          else if (props.pos === 2) mode = CommentMode.BOTTOM;
-        }
-      } catch {
-        // 使用默认值
-      }
-
-      const timestamp = comment.playat / 1000.0;
-
-      return this.formatComment({
-        id: comment.id.toString(),
-        timestamp: timestamp,
-        mode: mode,
-        color: color,
-        content: comment.content,
-      });
-    });
+    return MD5([this.token, t, appKey, dataPayload].join("&")).toString().toLowerCase();
   }
 
   /**

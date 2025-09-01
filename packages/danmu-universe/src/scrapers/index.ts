@@ -59,7 +59,7 @@ export class Scraper {
         (async () => {
           const segments = await this.getSegmentsByProvider(provider, videoId);
           if (!segments.length) return [];
-          const hit = this.findSegmentAtTime(segments, segmentTime * 1000);
+          const hit = this.findSegmentAtTime(segments, segmentTime);
           if (!hit) return [];
           return this.scraperMap[provider]?.getComments(videoId, hit.segmentId);
         })(),
