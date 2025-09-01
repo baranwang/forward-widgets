@@ -4,9 +4,3 @@ export enum MediaType {
   Movie = "movie",
   TV = "tv",
 }
-
-export enum VideoPlatform {
-  腾讯视频 = "qq",
-  爱奇艺 = "iqiyi",
-  优酷 = "youku",
-}

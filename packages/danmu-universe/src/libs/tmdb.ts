@@ -12,12 +12,12 @@ interface TmdbExternalIds {
 export const getExternalIdsByTmdbId = async (type: MediaType, tmdbId: string) => {
   let externalIds: TmdbExternalIds | null = null;
   const CACHE_KEY = `tmdb:${type}:${tmdbId}:external_ids`;
-  const cached = await storage.getJson<TmdbExternalIds>(CACHE_KEY);
+  const cached = storage.getJson<TmdbExternalIds>(CACHE_KEY);
   if (cached) {
     externalIds = cached;
   } else {
     externalIds = await Widget.tmdb.get<TmdbExternalIds>(`/${type}/${tmdbId}/external_ids`);
-    await storage.setJson(CACHE_KEY, externalIds, { ttl: TTL_7_DAYS });
+    storage.setJson(CACHE_KEY, externalIds, { ttl: TTL_7_DAYS });
   }
   return externalIds;
 };

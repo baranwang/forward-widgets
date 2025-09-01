@@ -5,14 +5,10 @@ import type { MediaType } from "../constants";
  */
 export interface Douban2VideoPlatformResponse {
   mediaType: MediaType;
-  qq?: {
-    cid: string;
-  };
-  iqiyi?: {
-    aid: string;
-    vid: string;
-  };
-  youku?: {
-    showId: string;
-  };
+  providers: Record<
+    string,
+    {
+      id: string;
+    }
+  >;
 }

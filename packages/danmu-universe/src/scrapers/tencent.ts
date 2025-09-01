@@ -292,9 +292,6 @@ export class TencentScraper extends BaseScraper {
     try {
       const response = await this.fetch.get(`https://dm.video.qq.com/barrage/segment/${vid}/${segmentId}`, {
         schema: tencentSegmentSchema,
-        cache: {
-          cacheKey: `tencent:comments:${vid}:${segmentId}`,
-        },
       });
       return response.data?.barrage_list ?? [];
     } catch (e: any) {

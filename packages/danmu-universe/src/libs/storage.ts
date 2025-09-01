@@ -22,40 +22,49 @@ const StorageValue = z.object({
 class Storage {
   private readonly defaultTTL = TTL_5_MINUTES;
 
-  async get(key: string) {
-    const value = await Widget.storage.get(key);
+  get(key: string) {
+    const value = Widget.storage.get(key);
     if (!value) return null;
     const result = safeJsonParseWithZod(value, StorageValue);
-    if (!result) return null;
+    if (!result) {
+      console.warn(`Failed to parse storage value for key: ${key}`, value);
+      this.remove(key);
+      return null;
+    }
     if (result?.expiresAt < Date.now()) {
-      await Widget.storage.set(key, "");
+      console.warn(`Storage value for key: ${key} has expired`, result);
+      this.remove(key);
       return null;
     }
     return result.value;
   }
 
-  async set(key: string, value: string, options?: SetOptions) {
+  set(key: string, value: string, options?: SetOptions) {
     const ttl = options?.ttl ?? this.defaultTTL;
     const expiresAt = Date.now() + ttl;
     const storageValue = StorageValue.parse({
       value,
       expiresAt,
     });
-    await Widget.storage.set(key, JSON.stringify(storageValue));
+    return Widget.storage.set(key, JSON.stringify(storageValue));
   }
 
-  async clear() {
-    await Widget.storage.clear();
+  remove(key: string) {
+    return Widget.storage.remove(key);
   }
 
-  async getJson<T = unknown>(key: string) {
-    const value = await this.get(key);
+  clear() {
+    return Widget.storage.clear();
+  }
+
+  getJson<T = unknown>(key: string) {
+    const value = this.get(key);
     if (!value) return null;
     return safeJsonParse<T>(value);
   }
 
-  async setJson(key: string, value: unknown, options?: SetOptions) {
-    await this.set(key, JSON.stringify(value), options);
+  setJson(key: string, value: unknown, options?: SetOptions) {
+    return this.set(key, JSON.stringify(value), options);
   }
 }
 

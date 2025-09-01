@@ -1,8 +1,8 @@
 import { keyBy, sortBy } from "es-toolkit";
 import { MediaType } from "../constants";
 import { getDoubanInfoByTmdbId, getVideoPlatformInfoByDoubanId } from "../libs/douban";
-import { storage } from "../libs/storage";
 import type { BaseScraper, ProviderEpisodeInfo, ProviderSegmentInfo } from "./base";
+import { IqiyiScraper } from "./iqiyi";
 import { TencentScraper } from "./tencent";
 import { YoukuScraper } from "./youku";
 
@@ -10,7 +10,7 @@ export class Scraper {
   private scrapers: BaseScraper[] = [];
 
   constructor() {
-    this.scrapers.push(new TencentScraper(), new YoukuScraper());
+    this.scrapers.push(new TencentScraper(), new YoukuScraper(), new IqiyiScraper());
   }
 
   get scraperMap() {
@@ -18,16 +18,10 @@ export class Scraper {
   }
 
   private async getSegmentsByProvider(provider: string, videoId: string): Promise<ProviderSegmentInfo[]> {
-    const cacheKey = `segments:${provider}:${videoId}`;
-    const cachedSegments = await storage.getJson<ProviderSegmentInfo[]>(cacheKey);
-    if (cachedSegments) {
-      return cachedSegments ?? [];
-    }
     const scraper = this.scraperMap[provider];
     if (!scraper) return [];
     let segments = await scraper.getSegments(videoId);
     segments = sortBy(segments, ["startTime"]);
-    await storage.setJson(cacheKey, segments);
     return segments;
   }
 
@@ -133,12 +127,9 @@ export class Scraper {
     const response = await getVideoPlatformInfoByDoubanId(doubanId.toString());
     const getEpisodes = this.getEpisodesFactory(params.type as MediaType);
     const options: Parameters<typeof getEpisodes> = [];
-    if (response.qq) {
-      options.push({ provider: "tencent", mediaId: response.qq.cid });
-    }
-    if (response.youku) {
-      options.push({ provider: "youku", mediaId: response.youku.showId });
-    }
+    Object.entries(response.providers).forEach(([provider, { id }]) => {
+      options.push({ provider, mediaId: id });
+    });
     const results = await getEpisodes(...options);
     const episodeNumber = params.episode ? parseInt(params.episode ?? "") : undefined;
     if (params.type === MediaType.TV && episodeNumber) {

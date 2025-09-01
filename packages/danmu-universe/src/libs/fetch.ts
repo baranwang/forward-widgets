@@ -76,6 +76,7 @@ export class Fetch {
     url: string,
     options?: RequestOptions<T>,
   ): Promise<HttpResponse<T["_zod"]["output"] | null>>;
+  async get<T>(url: string, options?: RequestOptions<never>): Promise<HttpResponse<T>>;
   async get<T>(url: string, options?: RequestOptions): Promise<HttpResponse<T>> {
     options ??= {};
     options.headers ??= {};
@@ -96,6 +97,7 @@ export class Fetch {
     body: unknown,
     options?: RequestOptions<T>,
   ): Promise<HttpResponse<T["_zod"]["output"] | null>>;
+  async post<T>(url: string, body: unknown, options?: RequestOptions<never>): Promise<HttpResponse<T>>;
   async post<T>(url: string, body: unknown, options?: RequestOptions): Promise<HttpResponse<T>> {
     options ??= {};
     options.headers ??= {};
@@ -135,7 +137,7 @@ export class Fetch {
   /**
    * 统一执行请求的核心逻辑
    */
-  private async executeRequest<T>(
+  private executeRequest<T>(
     method: "GET" | "POST",
     url: string,
     bodyOrOptions?: unknown | RequestOptions,
@@ -145,10 +147,10 @@ export class Fetch {
     const requestOptions: RequestOptions = ((isGet ? bodyOrOptions : options) as RequestOptions) ?? {};
     if (requestOptions.cache) {
       const cacheKey = this.getCacheKey({ method, url }, requestOptions);
-      const cached = await storage.getJson<HttpResponse<T>>(cacheKey);
+      const cached = storage.getJson<HttpResponse<T>>(cacheKey);
       if (cached) {
         console.debug("fetch cache hit", cacheKey);
-        return cached;
+        return Promise.resolve(cached);
       }
     }
 
@@ -166,11 +168,11 @@ export class Fetch {
     return requestPromise;
   }
 
-  private handleResponse = async <T>(
+  private handleResponse = <T>(
     response: HttpResponse<T>,
     context: RequestContext,
     options?: RequestOptions,
-  ): Promise<HttpResponse<T>> => {
+  ): Promise<HttpResponse<T>> | HttpResponse<T> => {
     if (options?.successStatus?.length && !options.successStatus.includes(response.statusCode)) {
       throw new HttpStatusError(response.statusCode, options.successStatus, context, response);
     }
@@ -198,13 +200,14 @@ export class Fetch {
 
     if (options?.cache) {
       const cacheKey = this.getCacheKey(context, options);
-      await storage.setJson(cacheKey, response, { ttl: options.cache.ttl });
+      storage.setJson(cacheKey, response, { ttl: options.cache.ttl });
     }
 
     if (options?.schema) {
       const result = (options.schema as z.ZodType).safeParse(response.data);
       if (!result.success) {
         console.error(context.url, `Failed to parse response with schema:`, z.prettifyError(result.error));
+        console.error("Response:", response.data);
       }
       return {
         ...response,

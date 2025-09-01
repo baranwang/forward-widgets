@@ -1,6 +1,6 @@
 import parseUrl from "url-parse";
 import { z } from "zod";
-import { DOUBAN_API_KEY, MediaType, VideoPlatform } from "../constants";
+import { DOUBAN_API_KEY, MediaType } from "../constants";
 import { Fetch } from "./fetch";
 import { TTL_7_DAYS } from "./storage";
 import { getExternalIdsByTmdbId } from "./tmdb";
@@ -114,7 +114,9 @@ export const getVideoPlatformInfoByDoubanId = async (doubanId: string) => {
 
   const result: Douban2VideoPlatformResponse = {
     mediaType: response.data?.is_tv ? MediaType.TV : MediaType.Movie,
+    providers: {},
   };
+  console.log(response.data?.vendors);
   for (const vendor of response.data?.vendors ?? []) {
     if (vendor.is_ad) {
       continue;
@@ -122,25 +124,25 @@ export const getVideoPlatformInfoByDoubanId = async (doubanId: string) => {
     const uriObj = parseUrl(vendor.uri, true);
 
     switch (vendor.id) {
-      case VideoPlatform.腾讯视频: {
+      case "qq": {
         const { cid } = uriObj.query;
         if (cid) {
-          result.qq = { cid };
+          result.providers.tencent = { id: cid };
         }
         break;
       }
-      case VideoPlatform.爱奇艺: {
-        const { aid, vid } = uriObj.query;
-        if (aid && vid) {
-          result.iqiyi = { aid, vid };
+      case "iqiyi": {
+        const { tvid } = uriObj.query;
+        if (tvid) {
+          result.providers.iqiyi = { id: tvid };
         }
         break;
       }
 
-      case VideoPlatform.优酷: {
+      case "youku": {
         const { showid: showId } = uriObj.query;
         if (showId) {
-          result.youku = { showId };
+          result.providers.youku = { id: showId };
         }
         break;
       }
@@ -175,8 +177,9 @@ if (import.meta.rstest) {
   test("getVideoPlatformInfoByDoubanId", async () => {
     const response = await getVideoPlatformInfoByDoubanId("34780991");
     expect(response).toBeDefined();
-    expect(response).toHaveProperty("qq", { cid: "mzc00200tjkzeps" });
-    expect(response).toHaveProperty("youku", { showId: "cdee9099d49b4137918b" });
+    expect(response.providers).toHaveProperty("tencent", { id: "mzc00200tjkzeps" });
+    expect(response.providers).toHaveProperty("youku", { id: "cdee9099d49b4137918b" });
+    expect(response.providers).toHaveProperty("iqiyi", { id: "1429158730765200" });
   });
 }
 

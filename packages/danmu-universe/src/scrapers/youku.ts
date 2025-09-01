@@ -293,9 +293,9 @@ export class YoukuScraper extends BaseScraper {
         const timestamp = comment.playat / 1000.0;
         return {
           id: comment.id.toString(),
-          timestamp: timestamp,
-          mode: mode,
-          color: color,
+          timestamp,
+          mode,
+          color,
           content: comment.content,
         };
       });
