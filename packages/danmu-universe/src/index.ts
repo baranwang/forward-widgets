@@ -82,8 +82,8 @@ searchDanmu = async (params) => {
 };
 
 getComments = async (params) => {
-  const { commentId, segmentTime, tmdbId, type: mediaType, episode } = params;
-  let videoId = commentId;
+  const { animeId, commentId, segmentTime, tmdbId, type: mediaType, episode } = params;
+  let videoId = commentId ?? animeId;
   if (!videoId) {
     if (!tmdbId) {
       return { comments: [], count: 0 };
@@ -92,7 +92,7 @@ getComments = async (params) => {
     const episodes = await scraper.getDetailWithDoubanId(doubanInfo?.doubanId ?? "", mediaType as MediaType, episode);
     videoId = episodes.map((item) => [item.provider, item.episodeId].join(":")).join(",");
   }
-  const comments = await scraper.getDanmuWithSegmentTimeByVideoId(videoId, segmentTime);
+  const comments = await scraper.getDanmuWithSegmentTimeByVideoId(videoId.toString(), segmentTime);
   return {
     comments,
     count: comments.length,
