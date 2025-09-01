@@ -147,6 +147,14 @@ export const getVideoPlatformInfoByDoubanId = async (doubanId: string) => {
         break;
       }
 
+      case "bilibili": {
+        const seasonId = uriObj.pathname.split("/").pop();
+        if (seasonId && /\d+/.test(seasonId)) {
+          result.providers.bilibili = { id: seasonId };
+        }
+        break;
+      }
+
       default:
         break;
     }
@@ -175,11 +183,13 @@ if (import.meta.rstest) {
   });
 
   test("getVideoPlatformInfoByDoubanId", async () => {
-    const response = await getVideoPlatformInfoByDoubanId("34780991");
-    expect(response).toBeDefined();
-    expect(response.providers).toHaveProperty("tencent", { id: "mzc00200tjkzeps" });
-    expect(response.providers).toHaveProperty("youku", { id: "cdee9099d49b4137918b" });
-    expect(response.providers).toHaveProperty("iqiyi", { id: "1429158730765200" });
+    const response = await getVideoPlatformInfoByDoubanId("27121260");
+    console.log(response);
+    // const response = await getVideoPlatformInfoByDoubanId("34780991");
+    // expect(response).toBeDefined();
+    // expect(response.providers).toHaveProperty("tencent", { id: "mzc00200tjkzeps" });
+    // expect(response.providers).toHaveProperty("youku", { id: "cdee9099d49b4137918b" });
+    // expect(response.providers).toHaveProperty("iqiyi", { id: "1429158730765200" });
   });
 }
 

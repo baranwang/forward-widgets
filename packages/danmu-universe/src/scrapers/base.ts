@@ -59,14 +59,20 @@ export abstract class BaseScraper {
 
   protected formatComments<T>(
     rawComments: T[],
-    transformer: (item: T, index: number, array: T[]) => ProviderCommentItem,
+    transformer: (item: T, index: number, array: T[]) => ProviderCommentItem | null,
   ): CommentItem[] {
     const seenIds = new Set<string | number>();
     const contentMap = new Map<string, { item: ProviderCommentItem; count: number }>();
 
     let index = 0;
     for (const raw of rawComments) {
+      if (!raw) {
+        continue;
+      }
       const item = transformer(raw, index, rawComments);
+      if (!item) {
+        continue;
+      }
       index += 1;
 
       if (seenIds.has(item.id)) continue;

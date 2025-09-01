@@ -15,24 +15,29 @@
   "scripts": {
     "build": "rslib build",
     "dev": "rslib build --watch",
-    "test": "rstest"
+    "test": "rstest",
+    "pb": "pnpm pbjs && pnpm pbts",
+    "pbjs": "pbjs -t static-module -w es6 -o src/scrapers/bilibili/dm.proto.js src/scrapers/bilibili/dm.proto",
+    "pbts": "pbts -o src/scrapers/bilibili/dm.proto.d.ts src/scrapers/bilibili/dm.proto.js"
   },
   "dependencies": {
     "crypto-js": "^4.2.0",
     "es-toolkit": "^1.39.9",
     "fast-xml-parser": "^5.2.5",
     "p-limit": "^6.2.0",
+    "protobufjs": "^7.5.4",
     "url-parse": "^1.5.10",
     "zod": "^4.0.17"
   },
   "devDependencies": {
-    "@forward-widget/libs": "^1.7.3",
-    "@forward-widget/rslib-plugin": "^1.7.3",
+    "@forward-widget/libs": "^1.8.0",
+    "@forward-widget/rslib-plugin": "^1.8.0",
     "@rslib/core": "^0.10.5",
     "@rstest/core": "^0.1.3",
     "@types/crypto-js": "^4.2.2",
     "@types/node": "^22.16.0",
     "@types/url-parse": "^1.4.11",
+    "protobufjs-cli": "^1.1.3",
     "typescript": "^5.8.3"
   }
 }

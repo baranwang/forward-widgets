@@ -1,3 +1,4 @@
+import Base64 from "crypto-js/enc-base64";
 import type { z } from "zod";
 
 export function safeJsonParse<T>(json: string): T | null {
@@ -20,4 +21,17 @@ export function safeJsonParseWithZod<T extends z.ZodType>(json: string, schema: 
     return null;
   }
   return data as T["_zod"]["output"];
+}
+
+export function base64ToUint8Array(base64: string): Uint8Array {
+  const wordArray = Base64.parse(base64);
+  const bytes = new Uint8Array(wordArray.sigBytes);
+
+  for (let i = 0; i < wordArray.sigBytes; i++) {
+    const wordIndex = i >>> 2;
+    const byteIndex = i % 4;
+    bytes[i] = (wordArray.words[wordIndex] >>> (24 - byteIndex * 8)) & 0xff;
+  }
+
+  return bytes;
 }
