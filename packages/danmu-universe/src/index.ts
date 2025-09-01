@@ -1,8 +1,24 @@
-import type { MediaType } from "./constants";
+import { type MediaType, PROVIDER_NAMES } from "./constants";
 import { getDoubanInfoByTmdbId } from "./libs/douban";
 import { Scraper } from "./scrapers";
 
-// let WidgetMetadata, searchDanmu, getDetail, getComments;
+if (import.meta.rstest) {
+  Object.defineProperty(globalThis, "WidgetMetadata", {
+    value: undefined,
+    writable: true,
+    configurable: true,
+  });
+  Object.defineProperty(globalThis, "searchDanmu", {
+    value: undefined,
+    writable: true,
+    configurable: true,
+  });
+  Object.defineProperty(globalThis, "getComments", {
+    value: undefined,
+    writable: true,
+    configurable: true,
+  });
+}
 
 WidgetMetadata = {
   id: "baranwang.danmu.universe",
@@ -18,13 +34,6 @@ WidgetMetadata = {
       title: "搜索弹幕",
       functionName: "searchDanmu",
       description: "搜索弹幕",
-    },
-    {
-      type: "danmu",
-      id: "getDetail",
-      title: "获取详情",
-      functionName: "getDetail",
-      description: "获取详情",
     },
     {
       type: "danmu",
@@ -46,7 +55,7 @@ WidgetMetadata = {
 const scraper = new Scraper();
 
 searchDanmu = async (params) => {
-  const { tmdbId, type: mediaType } = params;
+  const { tmdbId, type: mediaType, episode } = params;
   console.log("Search danmu", params);
 
   if (!tmdbId) {
@@ -54,27 +63,34 @@ searchDanmu = async (params) => {
   }
 
   const doubanInfo = await getDoubanInfoByTmdbId(mediaType as MediaType, tmdbId);
+
+  const episodes = await scraper.getDetailWithDoubanId(doubanInfo?.doubanId ?? "", mediaType as MediaType, episode);
+
   return {
-    animes: [
-      {
-        animeId: doubanInfo?.doubanId ?? "",
-        animeTitle: doubanInfo?.originResponse?.title ?? "",
-      },
-    ],
+    animes: episodes.map((item) => {
+      let animeTitle = `[${PROVIDER_NAMES[item.provider]}] `;
+      if (item.episodeTitle) {
+        animeTitle += item.episodeTitle;
+      }
+      return {
+        animeId: item.episodeId,
+        bangumiId: item.episodeId,
+        animeTitle,
+      };
+    }),
   };
 };
 
-getDetail = async (params) => {
-  return scraper.getDetailWithDoubanId(params);
-};
-
 getComments = async (params) => {
-  const { commentId, segmentTime } = params;
+  const { commentId, segmentTime, tmdbId, type: mediaType, episode } = params;
   let videoId = commentId;
   if (!videoId) {
-    console.log("No video id, get episodes");
-    const episodes = await scraper.getDetailWithDoubanId(params);
-    videoId = episodes.map((item) => `${item.provider ? `${item.provider}:` : ""}${item.episodeId}`).join(",");
+    if (!tmdbId) {
+      return { comments: [], count: 0 };
+    }
+    const doubanInfo = await getDoubanInfoByTmdbId(mediaType as MediaType, tmdbId);
+    const episodes = await scraper.getDetailWithDoubanId(doubanInfo?.doubanId ?? "", mediaType as MediaType, episode);
+    videoId = episodes.map((item) => [item.provider, item.episodeId].join(":")).join(",");
   }
   const comments = await scraper.getDanmuWithSegmentTimeByVideoId(videoId, segmentTime);
   return {
@@ -83,17 +99,24 @@ getComments = async (params) => {
   };
 };
 
-// if (import.meta.rstest) {
-//   const { test, expect, rstest, beforeAll } = import.meta.rstest;
+if (import.meta.rstest) {
+  const { test, expect, rstest, beforeAll } = import.meta.rstest;
 
-//   beforeAll(async () => {
-//     const { WidgetAdaptor } = await import("@forward-widget/libs/widget-adaptor");
-//     rstest.stubGlobal("Widget", WidgetAdaptor);
-//   });
+  beforeAll(async () => {
+    const { WidgetAdaptor } = await import("@forward-widget/libs/widget-adaptor");
+    rstest.stubGlobal("Widget", WidgetAdaptor);
+  });
 
-//   test("getComments", async () => {
-//     const comments = await getComments({ tmdbId: "980477", type: "movie" } as any);
-//     expect(comments).toBeDefined();
-//     expect(comments.comments.length).toBeGreaterThan(0);
-//   });
-// }
+  test("searchDanmu", async () => {
+    const danmu = await searchDanmu({ tmdbId: "253093", type: "tv" } as any);
+    expect(danmu).toBeDefined();
+    expect(danmu.animes.length).toBeGreaterThan(0);
+  });
+
+  test("getComments", async () => {
+    const comments = await getComments({ commentId: "iqiyi:5298806780347900" } as any);
+    console.log(comments);
+    expect(comments).toBeDefined();
+    expect(comments.comments.length).toBeGreaterThan(0);
+  });
+}

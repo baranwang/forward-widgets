@@ -205,26 +205,6 @@ export class TencentScraper extends BaseScraper {
   }
 
   /**
-   * 从分集标题（如 "01", "第01集"）中解析出集数
-   */
-  private getEpisodeIndexFromTitle(title: string): number | null {
-    if (!title) {
-      return null;
-    }
-    // 用于从标题中提取集数的正则表达式
-    const episodeIndexPattern = /^(?:第)?(\d+)(?:集|话)?$/;
-    const match = episodeIndexPattern.exec(title.trim());
-    if (match) {
-      try {
-        return parseInt(match[1], 10);
-      } catch (error) {
-        return null;
-      }
-    }
-    return null;
-  }
-
-  /**
    * 获取指定cid的所有分集列表。
    * 处理了腾讯视频复杂的分页逻辑。
    */

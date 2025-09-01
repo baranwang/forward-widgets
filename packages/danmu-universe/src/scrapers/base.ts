@@ -103,8 +103,25 @@ export abstract class BaseScraper {
     return result;
   }
 
+  protected getEpisodeIndexFromTitle(title: string): number | null {
+    if (!title) {
+      return null;
+    }
+    // 用于从标题中提取集数的正则表达式
+    const episodeIndexPattern = /(?:第)?(\d+)(?:集|话)?$/;
+    const match = episodeIndexPattern.exec(title.trim());
+    if (match) {
+      try {
+        return parseInt(match[1], 10);
+      } catch (error) {
+        return null;
+      }
+    }
+    return null;
+  }
+
   private readonly GLOBAL_EPISODE_BLACKLIST_DEFAULT =
-    "^(.*?)((.+?版)|(特(别|典))|((导|演)员|嘉宾|角色)访谈|福利|彩蛋|花絮|预告|特辑|专访|访谈|幕后|周边|资讯|看点|速看|回顾|盘点|合集|PV|MV|CM|OST|ED|OP|BD|特典|SP|NCOP|NCED|MENU|Web-DL|rip|x264|x265|aac|flac)(.*?)$";
+    "^(.*?)((.+?版)|(特(别|典))|((导|演)员|嘉宾|角色)访谈|福利|先导|彩蛋|花絮|预告|特辑|专访|访谈|幕后|周边|资讯|看点|速看|回顾|盘点|合集|PV|MV|CM|OST|ED|OP|BD|特典|SP|NCOP|NCED|MENU|Web-DL|rip|x264|x265|aac|flac)(.*?)$";
   protected PROVIDER_SPECIFIC_BLACKLIST_DEFAULT = "";
 
   getEpisodeBlacklistPattern(): RegExp | null {

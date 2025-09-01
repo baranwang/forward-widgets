@@ -4,6 +4,53 @@ import { XMLParser } from "fast-xml-parser";
 import { z } from "zod";
 import { BaseScraper, CommentMode, type ProviderEpisodeInfo } from "./base";
 
+const iqiyiEpisodeTabDataVideoSchema = z
+  .object({
+    page_url: z.string(),
+    short_display_name: z.string(),
+    title: z.string(),
+    mark_type_show: z.int().optional(),
+  })
+  .transform((v) => {
+    return {
+      ...v,
+      get videoId() {
+        const match = v.page_url.match(/v_(\S+)\.html/);
+        return match?.[1] ?? "";
+      },
+    };
+  });
+
+const iqiyiEpisodeTabDataSchema = z.object({
+  data: z
+    .array(
+      z
+        .object({
+          videos: z
+            .object({
+              feature_paged: z
+                .record(
+                  z.string(),
+                  z.array(
+                    z.unknown().transform((v) => {
+                      const result = iqiyiEpisodeTabDataVideoSchema.safeParse(v);
+                      if (!result.success) {
+                        console.warn(`爱奇艺: 解析分集数据时发生错误:`, z.prettifyError(result.error), v);
+                      }
+                      return result.data;
+                    }),
+                  ),
+                )
+                .optional()
+                .transform((v) => compact(Object.values(v ?? {}).flat())),
+            })
+            .optional(),
+        })
+        .transform((v) => v.videos?.feature_paged),
+    )
+    .transform((v) => compact(v.flat())),
+});
+
 const iqiyiV3ApiResponseSchema = z.object({
   status_code: z.number(),
   data: z
@@ -19,6 +66,21 @@ const iqiyiV3ApiResponseSchema = z.object({
             }),
           )
           .optional(),
+      }),
+      template: z.object({
+        tabs: z.array(
+          z.object({
+            tab_id: z.string(),
+            tab_title: z.string(),
+            blocks: z.array(
+              z.object({
+                bk_id: z.string(),
+                bk_type: z.string(),
+                data: z.unknown().optional(),
+              }),
+            ),
+          }),
+        ),
       }),
     })
     .optional(),
@@ -65,6 +127,9 @@ export class IqiyiScraper extends BaseScraper {
 
   private readonly xmlParser = new XMLParser();
 
+  protected PROVIDER_SPECIFIC_BLACKLIST_DEFAULT =
+    "^(.*?)(抢先(版|篇)?|加更(版|篇)?|花絮|预告|特辑|彩蛋|专访|幕后(故事|花絮)?|直播|纯享|未播|衍生|番外|会员(专属|加长)?|片花|精华|看点|速览|解读|reaction|影评)(.*?)$";
+
   constructor() {
     super();
     this.fetch.setCookie({
@@ -86,6 +151,7 @@ export class IqiyiScraper extends BaseScraper {
       providerEpisodes = await this.getEpisodesV3(mediaId);
     } catch (error) {
       console.warn(`爱奇艺: 新版API (v3) 获取分集时发生错误: ${error}`, error);
+      providerEpisodes = [];
     }
     if (!providerEpisodes.length) {
       // TODO: 回退到旧版API
@@ -134,7 +200,6 @@ export class IqiyiScraper extends BaseScraper {
       return [];
     }
 
-    console.log(data.danmu.data.entry);
     return this.formatComments(data.danmu.data.entry, (comment) => {
       let color = 16777215;
       try {
@@ -150,14 +215,7 @@ export class IqiyiScraper extends BaseScraper {
     });
   }
 
-  private async getEpisodesV3(mediaId: string) {
-    console.info(`爱奇艺: 正在尝试使用新版API (v3) 获取分集 (media_id=${mediaId})`);
-    const entityId = this.videoIdToEntityId(mediaId);
-    if (!entityId) {
-      console.warn(`爱奇艺 (v3): 无法将 media_id '${mediaId}' 转换为 entity_id。`);
-      return [];
-    }
-
+  private async getEpisodesV3(entityId: string) {
     const timestamp = Date.now().toString();
     const params: Record<string, any> = {
       entity_id: entityId,
@@ -187,20 +245,55 @@ export class IqiyiScraper extends BaseScraper {
       });
 
       const result = response.data;
-      if (result?.status_code !== 0 || !result.data || !result.data.base_data?.video_list) {
-        console.warn(`爱奇艺 (v3): API未成功返回分集数据。状态码: ${result?.status_code}`);
-        return [];
+
+      const episodes: ProviderEpisodeInfo[] =
+        result?.data?.base_data?.video_list?.map((ep) => ({
+          provider: this.providerName,
+          episodeId: ep.tv_id.toString(),
+          episodeTitle: ep.name,
+          episodeNumber: ep.order,
+          url: ep.play_url,
+        })) ?? [];
+
+      if (!episodes.length) {
+        const tabData = result?.data?.template?.tabs
+          ?.find((tab) =>
+            tab.blocks.some((block) => block.bk_id === "selector_bk" && block.bk_type === "album_episodes"),
+          )
+          ?.blocks?.find((block) => block.bk_id === "selector_bk" && block.bk_type === "album_episodes")?.data;
+        const { success, data, error } = iqiyiEpisodeTabDataSchema.safeParse(tabData);
+        if (!success) {
+          console.warn(`爱奇艺: 解析分集数据时发生错误:`, z.prettifyError(error), tabData);
+          return [];
+        }
+        const blacklistPattern = this.getEpisodeBlacklistPattern();
+        let episodeIndex = 1;
+        for (const ep of data.data) {
+          /**
+           * 17: 预告
+           */
+          if (ep.mark_type_show === 17) {
+            continue;
+          }
+          const tvId = this.videoIdToEntityId(ep.videoId);
+          if (!tvId) {
+            continue;
+          }
+          if (blacklistPattern?.test(ep.title)) {
+            continue;
+          }
+          episodes.push({
+            provider: this.providerName,
+            episodeId: tvId,
+            episodeTitle: ep.title,
+            episodeNumber: this.getEpisodeIndexFromTitle(ep.short_display_name) ?? episodeIndex,
+            url: ep.page_url,
+          });
+          episodeIndex += 1;
+        }
       }
+      console.log(episodes);
 
-      const episodes = result.data.base_data.video_list.map((ep) => ({
-        provider: this.providerName,
-        episodeId: ep.tv_id.toString(),
-        episodeTitle: ep.name,
-        episodeNumber: ep.order,
-        url: ep.play_url,
-      }));
-
-      console.info(`爱奇艺 (v3): 成功获取 ${episodes.length} 个分集。`);
       return episodes;
     } catch (error) {
       console.error(`爱奇艺 (v3): 获取分集时发生错误: ${error}`);
@@ -275,6 +368,10 @@ if (import.meta.rstest) {
 
   test("iqiyi", async () => {
     const scraper = new IqiyiScraper();
+
+    const episodes = await scraper.getEpisodes("5298806780347900");
+    expect(episodes).toBeDefined();
+    expect(episodes.length).toBeGreaterThan(0);
 
     const segments = await scraper.getSegments("5298806780347900");
     expect(segments).toBeDefined();

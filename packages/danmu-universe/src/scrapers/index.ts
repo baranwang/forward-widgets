@@ -1,5 +1,5 @@
 import { keyBy, sortBy } from "es-toolkit";
-import { MediaType } from "../constants";
+import { MediaType, PROVIDER_NAMES } from "../constants";
 import { getDoubanInfoByTmdbId, getVideoPlatformInfoByDoubanId } from "../libs/douban";
 import type { BaseScraper, ProviderEpisodeInfo, ProviderSegmentInfo } from "./base";
 import { BilibiliScraper } from "./bilibili";
@@ -76,64 +76,39 @@ export class Scraper {
     return this.getSegmentWithTime(segmentTime, ...items);
   }
 
-  getEpisodesFactory(mediaType: MediaType) {
-    return async (...args: { provider: string; mediaId: string }[]) => {
-      const tasks: Promise<ProviderEpisodeInfo[]>[] = [];
-      for (const { provider, mediaId } of args) {
-        tasks.push(this.scraperMap[provider]?.getEpisodes(mediaId));
-      }
-      const rawResults = await Promise.all(tasks).catch((error) => {
-        console.error(error);
-        return [];
-      });
-      const results = rawResults.flat();
-      if (mediaType === MediaType.Movie) {
-        // 把所有的 Provider ID 合并成一个
-        const episodeId = results.map((item) => `${item.provider}:${item.episodeId}`).join(",");
-        return [
-          {
-            ...results[0],
-            provider: "",
-            episodeId,
-          },
-        ];
-      }
-      return results.map((item) => {
-        return {
-          ...item,
-          episodeId: `${item.provider}:${item.episodeId}`,
-          episodeTitle: `${item.provider}:${item.episodeTitle}`,
-        };
-      });
-    };
-  }
-
-  async getDoubanId(params: GetDetailParams) {
-    const { animeId, tmdbId, type: mediaType } = params;
-    if (animeId) {
-      return animeId;
+  async getEpisodes(...args: { provider: string; mediaId: string }[]) {
+    const tasks: Promise<ProviderEpisodeInfo[]>[] = [];
+    for (const { provider, mediaId } of args) {
+      tasks.push(
+        this.scraperMap[provider]?.getEpisodes(mediaId).catch((error) => {
+          console.error(error);
+          return [];
+        }),
+      );
     }
-    if (tmdbId) {
-      const doubanInfo = await getDoubanInfoByTmdbId(mediaType as MediaType, tmdbId);
-      return doubanInfo?.doubanId ?? "";
-    }
-    return "";
-  }
-
-  async getDetailWithDoubanId(params: GetDetailParams) {
-    const doubanId = await this.getDoubanId(params);
-    if (!doubanId) {
+    const rawResults = await Promise.all(tasks).catch((error) => {
+      console.error(error);
       return [];
-    }
+    });
+    const results = rawResults.flat();
+    return results.map((item) => {
+      return {
+        ...item,
+        episodeId: `${item.provider}:${item.episodeId}`,
+      };
+    });
+  }
+
+  async getDetailWithDoubanId(doubanId: string, mediaType: MediaType, episode?: string) {
     const response = await getVideoPlatformInfoByDoubanId(doubanId.toString());
-    const getEpisodes = this.getEpisodesFactory(params.type as MediaType);
-    const options: Parameters<typeof getEpisodes> = [];
+
+    const options: Parameters<typeof this.getEpisodes> = [];
     Object.entries(response.providers).forEach(([provider, { id }]) => {
       options.push({ provider, mediaId: id });
     });
-    const results = await getEpisodes(...options);
-    const episodeNumber = params.episode ? parseInt(params.episode ?? "") : undefined;
-    if (params.type === MediaType.TV && episodeNumber) {
+    const results = await this.getEpisodes(...options);
+    const episodeNumber = episode ? parseInt(episode ?? "") : undefined;
+    if (mediaType === MediaType.TV && episodeNumber) {
       return results.filter((item) => {
         return item.episodeNumber === episodeNumber;
       });
