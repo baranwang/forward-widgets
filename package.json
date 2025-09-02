@@ -4,10 +4,15 @@
   "scripts": {
     "build": "turbo run build",
     "dev": "turbo run dev",
-    "lint": "turbo run lint"
+    "lint": "turbo run lint",
+    "version": "changeset version",
+    "postversion": "npm run build",
+    "prerelease": "npm run build",
+    "release": "changeset publish"
   },
   "devDependencies": {
     "@biomejs/biome": "^2.1.4",
+    "@changesets/cli": "^2.29.6",
     "turbo": "^2.5.5",
     "typescript": "5.8.3"
   },

@@ -2,13 +2,10 @@
   "name": "@forward-widget/danmu-universe",
   "version": "0.0.0",
   "type": "module",
+  "main": "./dist/danmu-universe.js",
   "exports": {
-    ".": {
-      "types": "./dist/index.d.ts",
-      "import": "./dist/index.js"
-    }
+    "default": "./dist/danmu-universe.js"
   },
-  "types": "./dist/index.d.ts",
   "files": [
     "dist"
   ],
