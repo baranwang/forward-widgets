@@ -111,16 +111,18 @@ const iqiyiCommentsEntrySchema = z.object({
   }),
 });
 
-const iqiyiCommentsResponseSchema = z.object({
-  danmu: z.looseObject({
-    code: z.literal("A00000"),
-    data: z.object({
-      entry: z
-        .array(z.unknown().transform((v) => iqiyiCommentsEntrySchema.safeParse(v).data?.list.bulletInfo))
-        .transform((v) => compact(v.flat())),
+const iqiyiCommentsResponseSchema = z
+  .object({
+    danmu: z.looseObject({
+      code: z.literal("A00000"),
+      data: z.object({
+        entry: z
+          .array(z.unknown().transform((v) => iqiyiCommentsEntrySchema.safeParse(v).data?.list.bulletInfo))
+          .transform((v) => compact(v.flat())),
+      }),
     }),
-  }),
-});
+  })
+  .transform((v) => v.danmu.data.entry);
 
 export class IqiyiScraper extends BaseScraper {
   providerName = "iqiyi";
@@ -200,7 +202,7 @@ export class IqiyiScraper extends BaseScraper {
       return [];
     }
 
-    return this.formatComments(data.danmu.data.entry, (comment) => {
+    return this.formatComments(data, (comment) => {
       let color = 16777215;
       try {
         color = parseInt(comment.color, 16);
@@ -292,8 +294,6 @@ export class IqiyiScraper extends BaseScraper {
           episodeIndex += 1;
         }
       }
-      console.log(episodes);
-
       return episodes;
     } catch (error) {
       console.error(`爱奇艺 (v3): 获取分集时发生错误: ${error}`);
@@ -359,12 +359,7 @@ export class IqiyiScraper extends BaseScraper {
 }
 
 if (import.meta.rstest) {
-  const { test, expect, rstest, beforeAll } = import.meta.rstest;
-
-  beforeAll(async () => {
-    const { WidgetAdaptor } = await import("@forward-widget/libs/widget-adaptor");
-    rstest.stubGlobal("Widget", WidgetAdaptor);
-  });
+  const { test, expect } = import.meta.rstest;
 
   test("iqiyi", async () => {
     const scraper = new IqiyiScraper();

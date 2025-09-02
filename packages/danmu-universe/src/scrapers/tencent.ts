@@ -282,12 +282,7 @@ export class TencentScraper extends BaseScraper {
 }
 
 if (import.meta.rstest) {
-  const { test, expect, rstest, beforeAll } = import.meta.rstest;
-
-  beforeAll(async () => {
-    const { WidgetAdaptor } = await import("@forward-widget/libs/widget-adaptor");
-    rstest.stubGlobal("Widget", WidgetAdaptor);
-  });
+  const { test, expect } = import.meta.rstest;
 
   test("tencent", async () => {
     const scraper = new TencentScraper();

@@ -165,12 +165,7 @@ export const getVideoPlatformInfoByDoubanId = async (doubanId: string) => {
 //#region unit tests
 
 if (import.meta.rstest) {
-  const { test, expect, rstest, beforeAll } = import.meta.rstest;
-
-  beforeAll(async () => {
-    const { WidgetAdaptor } = await import("@forward-widget/libs/widget-adaptor");
-    rstest.stubGlobal("Widget", WidgetAdaptor);
-  });
+  const { test, expect } = import.meta.rstest;
 
   test("getDoubanInfoByImdbId", async () => {
     const response = await getDoubanInfoByImdbId("tt28151918");
@@ -183,7 +178,7 @@ if (import.meta.rstest) {
   });
 
   test("getVideoPlatformInfoByDoubanId", async () => {
-    const response = await getVideoPlatformInfoByDoubanId("35691814");
+    const response = await getVideoPlatformInfoByDoubanId("35861087");
     console.log(response);
     // const response = await getVideoPlatformInfoByDoubanId("34780991");
     // expect(response).toBeDefined();

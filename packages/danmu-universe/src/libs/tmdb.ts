@@ -25,12 +25,7 @@ export const getExternalIdsByTmdbId = async (type: MediaType, tmdbId: string) =>
 //#region unit tests
 
 if (import.meta.rstest) {
-  const { test, expect, rstest, beforeAll } = import.meta.rstest;
-
-  beforeAll(async () => {
-    const { WidgetAdaptor } = await import("@forward-widget/libs/widget-adaptor");
-    rstest.stubGlobal("Widget", WidgetAdaptor);
-  });
+  const { test, expect } = import.meta.rstest;
 
   test("getExternalIdsByTmdbId", async () => {
     const movieResponse = await getExternalIdsByTmdbId(MediaType.Movie, "1139695");

@@ -13,6 +13,11 @@ if (import.meta.rstest) {
     writable: true,
     configurable: true,
   });
+  Object.defineProperty(globalThis, "getDetail", {
+    value: undefined,
+    writable: true,
+    configurable: true,
+  });
   Object.defineProperty(globalThis, "getComments", {
     value: undefined,
     writable: true,
@@ -44,6 +49,13 @@ WidgetMetadata = {
     },
     {
       type: "danmu",
+      id: "getDetail",
+      title: "获取详情",
+      functionName: "getDetail",
+      description: "获取详情",
+    },
+    {
+      type: "danmu",
       id: "getDanmuWithSegmentTime",
       title: "获取弹幕切片",
       functionName: "getComments",
@@ -56,10 +68,9 @@ const scraper = new Scraper();
 
 searchDanmu = async (params) => {
   const { tmdbId, type: mediaType, episode } = params;
-  console.log("Search danmu", params);
 
   if (!tmdbId) {
-    return { animes: [] };
+    return null;
   }
 
   const doubanInfo = await getDoubanInfoByTmdbId(mediaType as MediaType, tmdbId);
@@ -81,12 +92,24 @@ searchDanmu = async (params) => {
   };
 };
 
+getDetail = async (params) => {
+  const { animeId, tmdbId, type: mediaType, episode } = params;
+  if (!tmdbId && !animeId) {
+    return null;
+  }
+  if (animeId) {
+    return scraper.getDetailWithAnimeId(animeId.toString(), mediaType as MediaType, episode);
+  }
+  const doubanInfo = await getDoubanInfoByTmdbId(mediaType as MediaType, tmdbId ?? "");
+  return scraper.getDetailWithDoubanId(doubanInfo?.doubanId ?? "", mediaType as MediaType, episode);
+};
+
 getComments = async (params) => {
   const { animeId, commentId, segmentTime, tmdbId, type: mediaType, episode } = params;
   let videoId = commentId ?? animeId;
   if (!videoId) {
     if (!tmdbId) {
-      return { comments: [], count: 0 };
+      return null;
     }
     const doubanInfo = await getDoubanInfoByTmdbId(mediaType as MediaType, tmdbId);
     const episodes = await scraper.getDetailWithDoubanId(doubanInfo?.doubanId ?? "", mediaType as MediaType, episode);
@@ -108,15 +131,15 @@ if (import.meta.rstest) {
   });
 
   test("searchDanmu", async () => {
-    const danmu = await searchDanmu({ tmdbId: "253093", type: "tv" } as any);
+    const danmu = await searchDanmu({ tmdbId: "253093", type: "tv" } as SearchDanmuParams);
     expect(danmu).toBeDefined();
-    expect(danmu.animes.length).toBeGreaterThan(0);
+    expect(danmu?.animes.length).toBeGreaterThan(0);
   });
 
   test("getComments", async () => {
-    const comments = await getComments({ commentId: "iqiyi:5298806780347900" } as any);
+    const comments = await getComments({ commentId: "iqiyi:5298806780347900" } as GetCommentsParams);
     console.log(comments);
     expect(comments).toBeDefined();
-    expect(comments.comments.length).toBeGreaterThan(0);
+    expect(comments?.comments.length).toBeGreaterThan(0);
   });
 }

@@ -134,9 +134,7 @@ export class YoukuScraper extends BaseScraper {
     return providerEpisodes;
   }
 
-  async getSegments(episodeId: string) {
-    const vid = episodeId.replace(/_/g, "=");
-
+  async getSegments(vid: string) {
     try {
       // 确保token和cookie已设置
       await this.ensureTokenCookie();
@@ -177,16 +175,13 @@ export class YoukuScraper extends BaseScraper {
   }
 
   async getComments(episodeId: string, segmentId: string): Promise<CommentItem[]> {
-    // 处理episodeId格式（将下划线替换为等号）
-    const vid = episodeId.replace(/_/g, "=");
-
     try {
       // 确保token和cookie已设置
       await this.ensureTokenCookie();
 
-      return this.getDanmuContentByMat(vid, parseInt(segmentId, 10));
+      return this.getDanmuContentByMat(episodeId, parseInt(segmentId, 10));
     } catch (error) {
-      console.error(`Youku: Failed to get danmaku for vid ${vid}:`, error);
+      console.error(`Youku: Failed to get danmaku for vid ${episodeId}:`, error);
       return [];
     }
   }
@@ -348,18 +343,14 @@ export class YoukuScraper extends BaseScraper {
 }
 
 if (import.meta.rstest) {
-  const { test, expect, rstest, beforeAll } = import.meta.rstest;
-
-  beforeAll(async () => {
-    const { WidgetAdaptor } = await import("@forward-widget/libs/widget-adaptor");
-    rstest.stubGlobal("Widget", WidgetAdaptor);
-  });
+  const { test, expect } = import.meta.rstest;
 
   test("youku", async () => {
     const scraper = new YoukuScraper();
-    const episodes = await scraper.getEpisodes("cdee9099d49b4137918b");
+    const episodes = await scraper.getEpisodes("eaea48e7a4c746c7b62b");
     expect(episodes).toBeDefined();
     expect(episodes.length).toBeGreaterThan(0);
+    console.log(episodes);
 
     const segments = await scraper.getSegments(episodes[0].episodeId);
     expect(segments).toBeDefined();

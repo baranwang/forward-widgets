@@ -48,8 +48,8 @@ export class BilibiliScraper extends BaseScraper {
       }
       results.push({
         provider: this.providerName,
-        episodeId: [seasonId, item.aid, item.cid].join(","),
-        episodeTitle: item.title,
+        episodeId: [seasonId, item.aid, item.cid].join("#"),
+        episodeTitle: item.show_title || item.title,
         episodeNumber: episodeIndex,
       });
       episodeIndex += 1;
@@ -61,7 +61,7 @@ export class BilibiliScraper extends BaseScraper {
   }
 
   async getSegments(episodeId: string) {
-    const [seasonId, aid, cid] = episodeId.split(",");
+    const [seasonId, aid, cid] = episodeId.split("#");
     const episodes = await this.getPgcEpisodes(seasonId);
     const episode = episodes?.find((ep) => ep.aid === parseInt(aid) && ep.cid === parseInt(cid));
     if (!episode) {
@@ -76,7 +76,7 @@ export class BilibiliScraper extends BaseScraper {
   }
 
   async getComments(episodeId: string, segmentId: string) {
-    const [seasonId, aid, cid] = episodeId.split(",");
+    const [seasonId, aid, cid] = episodeId.split("#");
     const episodes = await this.getPgcEpisodes(seasonId);
     const episode = episodes?.find((ep) => ep.aid === parseInt(aid) && ep.cid === parseInt(cid));
     if (!episode) {
@@ -102,11 +102,14 @@ export class BilibiliScraper extends BaseScraper {
   }
 
   private async getPgcEpisodes(seasonId: string) {
-    const response = await this.fetch.get("https://api.bilibili.com/x/v3/pgc/season/episode", {
+    const response = await this.fetch.get("https://api.bilibili.com/pgc/view/web/ep/list", {
       params: {
         season_id: seasonId,
       },
       schema: pgcEpisodeResultSchema,
+      cache: {
+        cacheKey: `bilibili:episodes:${seasonId}`,
+      },
     });
 
     return response.data?.result.episodes;
@@ -130,4 +133,24 @@ export class BilibiliScraper extends BaseScraper {
 
     return results;
   }
+}
+
+if (import.meta.rstest) {
+  const { test, expect } = import.meta.rstest;
+
+  test("bilibili", async () => {
+    const scraper = new BilibiliScraper();
+    const episodes = await scraper.getEpisodes("45969");
+    expect(episodes).toBeDefined();
+    expect(episodes.length).toBeGreaterThan(0);
+
+    const segments = await scraper.getSegments(episodes[0].episodeId);
+    expect(segments).toBeDefined();
+    expect(segments.length).toBeGreaterThan(0);
+
+    const comments = await scraper.getComments(episodes[0].episodeId, segments[0].segmentId);
+    expect(comments).toBeDefined();
+    expect(comments.length).toBeGreaterThan(0);
+    console.log("获取", comments.length, "条弹幕");
+  });
 }
