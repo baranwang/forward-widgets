@@ -1,6 +1,6 @@
 import { keyBy, sortBy } from "es-toolkit";
-import { MediaType, PROVIDER_NAMES } from "../constants";
-import { getDoubanInfoByTmdbId, getVideoPlatformInfoByDoubanId } from "../libs/douban";
+import { MediaType } from "../constants";
+import { getVideoPlatformInfoByDoubanId } from "../libs/douban";
 import type { BaseScraper, ProviderEpisodeInfo, ProviderSegmentInfo } from "./base";
 import { BilibiliScraper } from "./bilibili";
 import { IqiyiScraper } from "./iqiyi";
@@ -11,7 +11,9 @@ export class Scraper {
   private scrapers: BaseScraper[] = [];
 
   constructor() {
-    this.scrapers.push(new TencentScraper(), new YoukuScraper(), new IqiyiScraper(), new BilibiliScraper());
+    this.scrapers.push(
+      ...[TencentScraper, YoukuScraper, IqiyiScraper, BilibiliScraper].map((Scraper) => new Scraper()),
+    );
   }
 
   get scraperMap() {

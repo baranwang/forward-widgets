@@ -21,20 +21,8 @@ const StorageValue = z.object({
   expiresAt: z.number(),
 });
 
-const META_LAST_CLEANUP_KEY = "__storage_last_cleanup__";
-
 class Storage {
   private readonly defaultTTL = TTL_5_MINUTES;
-
-  constructor() {
-    const skipCleanup = this.get(META_LAST_CLEANUP_KEY);
-    if (!skipCleanup) {
-      Widget.storage.keys().forEach((key) => {
-        this.get(key);
-      });
-      this.set(META_LAST_CLEANUP_KEY, "1", { ttl: TTL_1_DAY });
-    }
-  }
 
   get(key: string) {
     const value = Widget.storage.get(key);
@@ -79,6 +67,17 @@ class Storage {
 
   setJson(key: string, value: unknown, options?: SetOptions) {
     return this.set(key, JSON.stringify(value), options);
+  }
+
+  cleanup() {
+    const META_LAST_CLEANUP_KEY = "__storage_last_cleanup__";
+    const skipCleanup = this.get(META_LAST_CLEANUP_KEY);
+    if (!skipCleanup) {
+      Widget.storage.keys().forEach((key) => {
+        this.get(key);
+      });
+    }
+    this.set(META_LAST_CLEANUP_KEY, "1", { ttl: TTL_1_DAY });
   }
 }
 

@@ -33,7 +33,8 @@ export class BilibiliScraper extends BaseScraper {
     });
   }
 
-  async getEpisodes(seasonId: string, episodeNumber?: number) {
+  async getEpisodes(episodeId: string, episodeNumber?: number) {
+    const [seasonId] = episodeId.split("#");
     const results: ProviderEpisodeInfo[] = [];
     const episodes = await this.getPgcEpisodes(seasonId);
     const blacklistPattern = this.getEpisodeBlacklistPattern();

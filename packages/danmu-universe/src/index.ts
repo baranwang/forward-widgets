@@ -1,5 +1,6 @@
 import { type MediaType, PROVIDER_NAMES } from "./constants";
 import { getDoubanInfoByTmdbId } from "./libs/douban";
+import { storage } from "./libs/storage";
 import { Scraper } from "./scrapers";
 
 if (import.meta.rstest) {
@@ -28,9 +29,10 @@ if (import.meta.rstest) {
 WidgetMetadata = {
   id: "baranwang.danmu.universe",
   title: "通用弹幕",
-  description: "通用弹幕获取",
+  description: "通用弹幕插件，支持腾讯、优酷、爱奇艺、哔哩哔哩等平台",
   author: "Baran",
   version: process.env.PACKAGE_VERSION,
+  site: "https://github.com/baranwang/forward-widgets/tree/main/packages/danmu-universe",
   requiredVersion: "0.0.2",
   modules: [
     {
@@ -67,6 +69,8 @@ WidgetMetadata = {
 const scraper = new Scraper();
 
 searchDanmu = async (params) => {
+  storage.cleanup();
+
   const { tmdbId, type: mediaType, episode } = params;
 
   if (!tmdbId) {

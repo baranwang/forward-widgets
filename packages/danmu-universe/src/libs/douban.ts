@@ -116,7 +116,6 @@ export const getVideoPlatformInfoByDoubanId = async (doubanId: string) => {
     mediaType: response.data?.is_tv ? MediaType.TV : MediaType.Movie,
     providers: {},
   };
-  console.log(response.data?.vendors);
   for (const vendor of response.data?.vendors ?? []) {
     if (vendor.is_ad) {
       continue;
