@@ -70,14 +70,18 @@ class Storage {
   }
 
   cleanup() {
-    const META_LAST_CLEANUP_KEY = "__storage_last_cleanup__";
-    const skipCleanup = this.get(META_LAST_CLEANUP_KEY);
-    if (!skipCleanup) {
-      Widget.storage.keys().forEach((key) => {
-        this.get(key);
-      });
+    try {
+      const META_LAST_CLEANUP_KEY = "__storage_last_cleanup__";
+      const skipCleanup = this.get(META_LAST_CLEANUP_KEY);
+      if (!skipCleanup) {
+        Widget.storage.keys().forEach((key) => {
+          this.get(key);
+        });
+      }
+      this.set(META_LAST_CLEANUP_KEY, "1", { ttl: TTL_1_DAY });
+    } catch (error) {
+      console.error("Failed to cleanup storage", error);
     }
-    this.set(META_LAST_CLEANUP_KEY, "1", { ttl: TTL_1_DAY });
   }
 }
 

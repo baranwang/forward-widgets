@@ -10,8 +10,8 @@
     "dist"
   ],
   "scripts": {
-    "build": "rslib build",
-    "dev": "rslib build --watch",
+    "build": "NODE_ENV=production rslib build",
+    "dev": "NODE_ENV=development rslib build --watch",
     "test": "rstest",
     "pb": "pnpm pbjs && pnpm pbts",
     "pbjs": "pbjs -t static-module -w es6 -o src/scrapers/bilibili/dm.proto.js src/scrapers/bilibili/dm.proto",

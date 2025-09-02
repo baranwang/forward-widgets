@@ -28,7 +28,7 @@ if (import.meta.rstest) {
 
 WidgetMetadata = {
   id: "baranwang.danmu.universe",
-  title: "通用弹幕",
+  title: process.env.NODE_ENV === "production" ? "通用弹幕" : "通用弹幕 (测试)",
   description: "通用弹幕插件，支持腾讯、优酷、爱奇艺、哔哩哔哩等平台",
   author: "Baran",
   version: process.env.PACKAGE_VERSION,
