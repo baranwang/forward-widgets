@@ -1,5 +1,11 @@
 # @forward-widget/danmu-universe
 
+## 0.0.2
+
+### Patch Changes
+
+- edb0a63: 增强存储清理逻辑并添加错误处理
+
 ## 0.0.1
 
 ### Patch Changes
