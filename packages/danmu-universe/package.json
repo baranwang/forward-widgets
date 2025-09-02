@@ -37,5 +37,13 @@
     "protobufjs-cli": "^1.1.3",
     "typescript": "^5.8.3"
   },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/baranwang/forward-widgets.git",
+    "directory": "packages/danmu-universe"
+  },
+  "publishConfig": {
+    "provenance": true
+  },
   "license": "MIT"
 }
