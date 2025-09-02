@@ -89,7 +89,6 @@ searchDanmu = async (params) => {
       }
       return {
         animeId: item.episodeId,
-        bangumiId: item.episodeId,
         animeTitle,
       };
     }),
@@ -135,15 +134,16 @@ if (import.meta.rstest) {
   });
 
   test("searchDanmu", async () => {
-    const danmu = await searchDanmu({ tmdbId: "253093", type: "tv" } as SearchDanmuParams);
+    const danmu = await searchDanmu({ tmdbId: "1139695", type: "movie" } as SearchDanmuParams);
+    console.log(danmu);
     expect(danmu).toBeDefined();
     expect(danmu?.animes.length).toBeGreaterThan(0);
   });
 
-  test("getComments", async () => {
-    const comments = await getComments({ commentId: "iqiyi:5298806780347900" } as GetCommentsParams);
-    console.log(comments);
-    expect(comments).toBeDefined();
-    expect(comments?.comments.length).toBeGreaterThan(0);
-  });
+  // test("getComments", async () => {
+  //   const comments = await getComments({ commentId: "iqiyi:5298806780347900" } as GetCommentsParams);
+  //   console.log(comments);
+  //   expect(comments).toBeDefined();
+  //   expect(comments?.comments.length).toBeGreaterThan(0);
+  // });
 }

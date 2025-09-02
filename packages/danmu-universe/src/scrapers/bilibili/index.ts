@@ -4,6 +4,14 @@ import { base64ToUint8Array } from "../../libs/utils";
 import { BaseScraper, CommentMode, type ProviderEpisodeInfo } from "../base";
 import { biliproto } from "./dm.proto.js";
 
+const bilibiliIdSchema = z.object({
+  seasonId: z.string(),
+  aid: z.string().optional(),
+  cid: z.string().optional(),
+});
+
+export type BilibiliId = z.infer<typeof bilibiliIdSchema>;
+
 const pgcEpisodeSchema = z.object({
   aid: z.int(),
   cid: z.int(),
@@ -21,8 +29,10 @@ const pgcEpisodeResultSchema = z.object({
   }),
 });
 
-export class BilibiliScraper extends BaseScraper {
+export class BilibiliScraper extends BaseScraper<typeof bilibiliIdSchema> {
   providerName = "bilibili";
+
+  protected idSchema = bilibiliIdSchema;
 
   private readonly DmSegMobileReply = biliproto.community.service.dm.v1.DmSegMobileReply;
 
@@ -33,10 +43,13 @@ export class BilibiliScraper extends BaseScraper {
     });
   }
 
-  async getEpisodes(episodeId: string, episodeNumber?: number) {
-    const [seasonId] = episodeId.split("#");
+  async getEpisodes(idString: string, episodeNumber?: number) {
+    const bilibiliId = this.parseIdString(idString);
+    if (!bilibiliId) {
+      return [];
+    }
     const results: ProviderEpisodeInfo[] = [];
-    const episodes = await this.getPgcEpisodes(seasonId);
+    const episodes = await this.getPgcEpisodes(bilibiliId.seasonId);
     const blacklistPattern = this.getEpisodeBlacklistPattern();
 
     let episodeIndex = 1;
@@ -49,7 +62,12 @@ export class BilibiliScraper extends BaseScraper {
       }
       results.push({
         provider: this.providerName,
-        episodeId: [seasonId, item.aid, item.cid].join("#"),
+        episodeId: this.generateIdString({
+          seasonId: bilibiliId.seasonId,
+          aid: item.aid.toString(),
+          cid: item.cid.toString(),
+        }),
+
         episodeTitle: item.show_title || item.title,
         episodeNumber: episodeIndex,
       });
@@ -62,7 +80,10 @@ export class BilibiliScraper extends BaseScraper {
   }
 
   async getSegments(episodeId: string) {
-    const [seasonId, aid, cid] = episodeId.split("#");
+    const { aid, cid, seasonId } = this.parseIdString(episodeId) ?? {};
+    if (!aid || !cid || !seasonId) {
+      return [];
+    }
     const episodes = await this.getPgcEpisodes(seasonId);
     const episode = episodes?.find((ep) => ep.aid === parseInt(aid) && ep.cid === parseInt(cid));
     if (!episode) {
@@ -77,7 +98,10 @@ export class BilibiliScraper extends BaseScraper {
   }
 
   async getComments(episodeId: string, segmentId: string) {
-    const [seasonId, aid, cid] = episodeId.split("#");
+    const { aid, cid, seasonId } = this.parseIdString(episodeId) ?? {};
+    if (!aid || !cid || !seasonId) {
+      return [];
+    }
     const episodes = await this.getPgcEpisodes(seasonId);
     const episode = episodes?.find((ep) => ep.aid === parseInt(aid) && ep.cid === parseInt(cid));
     if (!episode) {

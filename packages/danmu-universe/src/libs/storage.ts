@@ -29,12 +29,12 @@ class Storage {
     if (!value) return null;
     const result = safeJsonParseWithZod(value, StorageValue);
     if (!result) {
-      console.warn(`Failed to parse storage value for key: ${key}`, value);
+      console.warn(`Failed to parse storage value for key: ${key}`);
       this.remove(key);
       return null;
     }
     if (result?.expiresAt < Date.now()) {
-      console.warn(`Storage value for key: ${key} has expired`, result);
+      console.warn(`Storage value for key: ${key} has expired`);
       this.remove(key);
       return null;
     }

@@ -1,4 +1,6 @@
+import { z } from "zod";
 import { Fetch } from "../libs/fetch";
+import { safeJsonParse } from "../libs/utils";
 
 export interface ProviderEpisodeInfo {
   /** 数据源提供方 */
@@ -42,14 +44,33 @@ interface ProviderCommentItem {
   content: string;
 }
 
-export abstract class BaseScraper {
+export abstract class BaseScraper<IDType extends z.ZodType = any> {
   abstract providerName: string;
 
-  abstract getEpisodes(mediaId: string, episodeIndex?: number): Promise<ProviderEpisodeInfo[]>;
+  protected idSchema?: IDType;
 
-  abstract getSegments(episodeId: string): Promise<ProviderSegmentInfo[]>;
+  protected parseIdString(idString: string): z.infer<IDType> | null {
+    const decodedIdString = safeJsonParse(decodeURIComponent(idString));
+    const result = this.idSchema?.safeParse(decodedIdString);
+    if (!result) {
+      console.log(this.providerName, "parseIdString", idString, "idSchema is not defined");
+      return null;
+    }
+    if (!result.success) {
+      console.log(this.providerName, "parseIdString", idString, z.prettifyError(result.error));
+      return null;
+    }
+    return result.data ?? null;
+  }
+  generateIdString(id: z.infer<IDType>) {
+    return encodeURIComponent(JSON.stringify(id));
+  }
 
-  abstract getComments(episodeId: string, segmentId: string): Promise<CommentItem[]>;
+  abstract getEpisodes(idString: string, episodeIndex?: number): Promise<ProviderEpisodeInfo[]>;
+
+  abstract getSegments(idString: string): Promise<ProviderSegmentInfo[]>;
+
+  abstract getComments(idString: string, segmentId: string): Promise<CommentItem[]>;
 
   protected fetch = new Fetch();
 
@@ -57,23 +78,18 @@ export abstract class BaseScraper {
     return new Promise((resolve) => setTimeout(resolve, ms));
   }
 
-  protected formatComments<T>(
-    rawComments: T[],
-    transformer: (item: T, index: number, array: T[]) => ProviderCommentItem | null,
-  ): CommentItem[] {
+  protected formatComments<T>(rawComments: T[], transformer: (item: T) => ProviderCommentItem | null): CommentItem[] {
     const seenIds = new Set<string | number>();
     const contentMap = new Map<string, { item: ProviderCommentItem; count: number }>();
 
-    let index = 0;
     for (const raw of rawComments) {
       if (!raw) {
         continue;
       }
-      const item = transformer(raw, index, rawComments);
+      const item = transformer(raw);
       if (!item) {
         continue;
       }
-      index += 1;
 
       if (seenIds.has(item.id)) continue;
       seenIds.add(item.id);

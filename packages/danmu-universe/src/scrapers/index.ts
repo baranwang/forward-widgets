@@ -7,13 +7,15 @@ import { IqiyiScraper } from "./iqiyi";
 import { TencentScraper } from "./tencent";
 import { YoukuScraper } from "./youku";
 
+const scrapers = [TencentScraper, YoukuScraper, IqiyiScraper, BilibiliScraper];
+
 export class Scraper {
   private scrapers: BaseScraper[] = [];
 
   constructor() {
-    this.scrapers.push(
-      ...[TencentScraper, YoukuScraper, IqiyiScraper, BilibiliScraper].map((Scraper) => new Scraper()),
-    );
+    scrapers.forEach((Scraper) => {
+      this.scrapers.push(new Scraper());
+    });
   }
 
   get scraperMap() {
@@ -81,8 +83,10 @@ export class Scraper {
   private async getEpisodes(...args: { provider: string; mediaId: string }[]) {
     const tasks: Promise<ProviderEpisodeInfo[]>[] = [];
     for (const { provider, mediaId } of args) {
+      const scraper = this.scraperMap[provider];
+      if (!scraper) continue;
       tasks.push(
-        this.scraperMap[provider]?.getEpisodes(mediaId).catch((error) => {
+        scraper.getEpisodes(mediaId).catch((error) => {
           console.error(error);
           return [];
         }),
@@ -119,7 +123,6 @@ export class Scraper {
 
   async getDetailWithDoubanId(doubanId: string, mediaType: MediaType, episode?: string) {
     const response = await getVideoPlatformInfoByDoubanId(doubanId.toString());
-
     const options: Parameters<typeof this.getEpisodes> = [];
     Object.entries(response.providers).forEach(([provider, { id }]) => {
       options.push({ provider, mediaId: id });

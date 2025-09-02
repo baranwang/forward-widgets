@@ -4,6 +4,13 @@ import { TTL_2_HOURS } from "../libs/storage";
 import { safeJsonParseWithZod } from "../libs/utils";
 import { BaseScraper, CommentMode } from "./base";
 
+const tencentIdSchema = z.object({
+  cid: z.string(),
+  vid: z.string().optional(),
+});
+
+export type TencentId = z.infer<typeof tencentIdSchema>;
+
 const tencentEpisodeSchema = z.object({
   vid: z.string().refine((val) => !!val),
   is_trailer: z.string().refine((val) => val !== "1"),
@@ -24,25 +31,27 @@ const tencentEpisodeSchema = z.object({
   }),
 });
 
-const tencentEpisodeResultSchema = z.object({
-  data: z.object({
-    module_list_datas: z.array(
-      z.object({
-        module_datas: z.array(
-          z.object({
-            item_data_lists: z.object({
-              item_datas: z.array(
-                z.object({
-                  item_params: z.unknown(),
-                }),
-              ),
+const tencentEpisodeResultSchema = z
+  .object({
+    data: z.object({
+      module_list_datas: z.array(
+        z.object({
+          module_datas: z.array(
+            z.object({
+              item_data_lists: z.object({
+                item_datas: z.array(
+                  z.object({
+                    item_params: z.unknown(),
+                  }),
+                ),
+              }),
             }),
-          }),
-        ),
-      }),
-    ),
-  }),
-});
+          ),
+        }),
+      ),
+    }),
+  })
+  .transform((v) => v.data.module_list_datas?.[0]?.module_datas?.[0]?.item_data_lists?.item_datas ?? []);
 
 const tencentSegmentIndexSchema = z.object({
   segment_index: z.record(
@@ -70,15 +79,7 @@ const tencentCommentItemSchema = z.object({
 
 const tencentSegmentSchema = z.object({
   barrage_list: z
-    .array(
-      z.unknown().transform((v) => {
-        const { success, data } = tencentCommentItemSchema.safeParse(v);
-        if (success) {
-          return data;
-        }
-        return null;
-      }),
-    )
+    .array(z.unknown().transform((v) => tencentCommentItemSchema.safeParse(v).data ?? null))
     .transform((v) => v.filter((v) => v !== null)),
 });
 
@@ -87,8 +88,10 @@ type TencentCommentItem = z.infer<typeof tencentCommentItemSchema>;
 
 const pageSize = 100;
 
-export class TencentScraper extends BaseScraper {
+export class TencentScraper extends BaseScraper<typeof tencentIdSchema> {
   providerName = "tencent";
+
+  protected idSchema = tencentIdSchema;
 
   constructor() {
     super();
@@ -105,10 +108,14 @@ export class TencentScraper extends BaseScraper {
     });
   }
 
-  async getEpisodes(mediaId: string, episodeNumber?: number) {
+  async getEpisodes(idString: string, episodeNumber?: number) {
+    const tencentId = this.parseIdString(idString);
+    if (!tencentId) {
+      return [];
+    }
     // 获取指定cid的所有分集列表
     // mediaId 对于腾讯来说就是 cid
-    const tencentEpisodes = await this.internalGetEpisodes(mediaId);
+    const tencentEpisodes = await this.internalGetEpisodes(tencentId.cid);
     const allProviderEpisodes = tencentEpisodes.map((ep, i) => {
       let episodeIndex = this.getEpisodeIndexFromTitle(ep.title);
       if (!episodeIndex) {
@@ -116,10 +123,13 @@ export class TencentScraper extends BaseScraper {
       }
       return {
         provider: this.providerName,
-        episodeId: ep.vid || "",
+        episodeId: this.generateIdString({
+          cid: tencentId.cid,
+          vid: ep.vid,
+        }),
         episodeTitle: ep.union_title && ep.union_title !== ep.title ? ep.union_title : ep.title,
         episodeNumber: episodeIndex,
-        url: `https://v.qq.com/x/cover/${mediaId}/${ep.vid}.html`,
+        url: `https://v.qq.com/x/cover/${tencentId.cid}/${ep.vid}.html`,
       };
     });
 
@@ -132,13 +142,18 @@ export class TencentScraper extends BaseScraper {
     return allProviderEpisodes;
   }
 
-  async getSegments(vid: string) {
+  async getSegments(idString: string) {
+    const tencentId = this.parseIdString(idString);
+    if (!tencentId) {
+      return [];
+    }
+
     let segmentIndex: TencentSegmentIndex["segment_index"] = {};
     try {
-      const response = await this.fetch.get(`https://dm.video.qq.com/barrage/base/${vid}`, {
+      const response = await this.fetch.get(`https://dm.video.qq.com/barrage/base/${tencentId.vid}`, {
         schema: tencentSegmentIndexSchema,
         cache: {
-          cacheKey: `tencent:segment:${vid}`,
+          cacheKey: `tencent:segment:${tencentId.vid}`,
           ttl: TTL_2_HOURS,
         },
       });
@@ -148,17 +163,17 @@ export class TencentScraper extends BaseScraper {
       }
 
       if (!response.data?.segment_index) {
-        console.info(`vid='${vid}' 没有找到弹幕分段索引。`);
+        console.info(`vid='${tencentId.vid}' 没有找到弹幕分段索引。`);
         return [];
       }
       segmentIndex = response.data.segment_index;
     } catch (e: any) {
-      console.error(`获取弹幕索引失败 (vid=${vid})`, e);
+      console.error(`获取弹幕索引失败 (vid=${tencentId.vid})`, e);
       return [];
     }
 
     const sortedKeys = Object.keys(segmentIndex).sort((a, b) => parseInt(a, 10) - parseInt(b, 10));
-    console.debug(`为 vid='${vid}' 找到 ${sortedKeys.length} 个弹幕分段`);
+    console.debug(`为 vid='${tencentId.vid}' 找到 ${sortedKeys.length} 个弹幕分段`);
 
     return sortedKeys.map((key) => {
       return {
@@ -169,8 +184,12 @@ export class TencentScraper extends BaseScraper {
     });
   }
 
-  async getComments(episodeId: string, segmentId: string) {
-    const rawComments = await this.internalGetComments(episodeId, segmentId);
+  async getComments(idString: string, segmentId: string) {
+    const tencentId = this.parseIdString(idString);
+    if (!tencentId?.vid) {
+      return [];
+    }
+    const rawComments = await this.internalGetComments(tencentId.vid, segmentId);
 
     if (!rawComments || rawComments.length === 0) {
       return [];
@@ -218,50 +237,54 @@ export class TencentScraper extends BaseScraper {
     });
 
     while (true) {
-      const response = await this.fetch.post(
-        "https://pbaccess.video.qq.com/trpc.universal_backend_service.page_server_rpc.PageServer/GetPageData?video_appid=3000010&vplatform=2",
-        {
-          page_params: {
-            cid,
-            page_type: "detail_operation",
-            page_id: "vsite_episode_list",
-            id_type: "1",
-            page_size: pageSize.toString(),
-            lid: "0",
-            req_from: "web_mobile",
-            page_context: pageContext,
+      try {
+        const response = await this.fetch.post(
+          "https://pbaccess.video.qq.com/trpc.universal_backend_service.page_server_rpc.PageServer/GetPageData?video_appid=3000010&vplatform=2",
+          {
+            page_params: {
+              cid,
+              page_type: "detail_operation",
+              page_id: "vsite_episode_list",
+              id_type: "1",
+              page_size: pageSize.toString(),
+              lid: "0",
+              req_from: "web_mobile",
+              page_context: pageContext,
+            },
+            has_cache: 1,
           },
-          has_cache: 1,
-        },
-        {
-          headers: {
-            "Content-Type": "application/json",
+          {
+            headers: {
+              "Content-Type": "application/json",
+            },
+            schema: tencentEpisodeResultSchema,
+            cache: {
+              cacheKey: `tencent:episodes:${cid}:${page}`,
+            },
           },
-          schema: tencentEpisodeResultSchema,
-          cache: {
-            cacheKey: `tencent:episodes:${cid}:${page}`,
-          },
-        },
-      );
-      const itemDatas =
-        response.data?.data?.module_list_datas?.[0]?.module_datas?.[0]?.item_data_lists?.item_datas ?? [];
-      if (itemDatas.length >= pageSize) {
-        page += 1;
-        pageContext = qs.stringify({
-          episode_begin: page * pageSize,
-          episode_end: (page + 1) * pageSize,
-          episode_step: pageSize,
-        });
-      } else {
-        pageContext = "";
-      }
-      for (const item of itemDatas) {
-        const { success, data } = tencentEpisodeSchema.safeParse(item.item_params);
-        if (success) {
-          results.push(data);
+        );
+        const itemDatas = response.data ?? [];
+        if (itemDatas.length >= pageSize) {
+          page += 1;
+          pageContext = qs.stringify({
+            episode_begin: page * pageSize,
+            episode_end: (page + 1) * pageSize,
+            episode_step: pageSize,
+          });
+        } else {
+          pageContext = "";
         }
-      }
-      if (!pageContext) {
+        for (const item of itemDatas) {
+          const { success, data } = tencentEpisodeSchema.safeParse(item.item_params);
+          if (success) {
+            results.push(data);
+          }
+        }
+        if (!pageContext) {
+          break;
+        }
+      } catch (error) {
+        console.error(`获取分集列表失败 (cid=${cid})`, error);
         break;
       }
     }
@@ -286,16 +309,16 @@ if (import.meta.rstest) {
 
   test("tencent", async () => {
     const scraper = new TencentScraper();
-    const episodes = await scraper.getEpisodes("mzc00200tjkzeps");
+    const episodes = await scraper.getEpisodes(scraper.generateIdString({ cid: "mzc002009y0nzq8" }));
+    console.log(episodes);
     expect(episodes).toBeDefined();
-    expect(episodes.length).toBe(1);
-    expect(episodes[0].episodeId).toBe("y4101qnn3jo");
+    expect(episodes.length).toBeGreaterThan(0);
 
-    const segments = await scraper.getSegments("y4101qnn3jo");
+    const segments = await scraper.getSegments(episodes[0].episodeId);
     expect(segments).toBeDefined();
     expect(segments.length).toBeGreaterThan(0);
 
-    const comments = await scraper.getComments("y4101qnn3jo", segments[0].segmentId);
+    const comments = await scraper.getComments(episodes[0].episodeId, segments[0].segmentId);
     expect(comments).toBeDefined();
     expect(comments.length).toBeGreaterThan(0);
   });

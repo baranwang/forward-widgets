@@ -1,6 +1,7 @@
 import parseUrl from "url-parse";
 import { z } from "zod";
 import { DOUBAN_API_KEY, MediaType } from "../constants";
+import type { TencentId } from "../scrapers/tencent";
 import { Fetch } from "./fetch";
 import { TTL_7_DAYS } from "./storage";
 import { getExternalIdsByTmdbId } from "./tmdb";
@@ -124,9 +125,15 @@ export const getVideoPlatformInfoByDoubanId = async (doubanId: string) => {
 
     switch (vendor.id) {
       case "qq": {
-        const { cid } = uriObj.query;
+        const { cid, vid } = uriObj.query;
         if (cid) {
-          result.providers.tencent = { id: cid };
+          const tencentId: TencentId = {
+            cid,
+          };
+          if (result.mediaType === MediaType.Movie) {
+            tencentId.vid = vid;
+          }
+          result.providers.tencent = { id: encodeURIComponent(JSON.stringify(tencentId)) };
         }
         break;
       }
@@ -149,7 +156,7 @@ export const getVideoPlatformInfoByDoubanId = async (doubanId: string) => {
       case "bilibili": {
         const seasonId = uriObj.pathname.split("/").pop();
         if (seasonId && /\d+/.test(seasonId)) {
-          result.providers.bilibili = { id: seasonId };
+          result.providers.bilibili = { id: encodeURIComponent(JSON.stringify({ seasonId })) };
         }
         break;
       }
@@ -177,7 +184,7 @@ if (import.meta.rstest) {
   });
 
   test("getVideoPlatformInfoByDoubanId", async () => {
-    const response = await getVideoPlatformInfoByDoubanId("35861087");
+    const response = await getVideoPlatformInfoByDoubanId("26749938");
     console.log(response);
     // const response = await getVideoPlatformInfoByDoubanId("34780991");
     // expect(response).toBeDefined();
