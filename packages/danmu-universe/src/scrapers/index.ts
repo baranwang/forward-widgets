@@ -93,6 +93,7 @@ export class Scraper {
     contentMap.forEach(({ item, count, provider }) => {
       const content = count > 1 ? `${item.content} × ${count}` : item.content;
       comments.push({
+        cid: item.id,
         p: `${item.timestamp.toFixed(2)},${item.mode},${item.color},[${provider}]` as CommentItem["p"],
         m: content,
       });
