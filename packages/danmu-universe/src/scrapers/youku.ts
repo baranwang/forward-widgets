@@ -17,6 +17,10 @@ const youkuEpisodeInfoSchema = z
   .object({
     id: z.string(),
     title: z.string(),
+    seq: z
+      .string()
+      .transform((v) => parseInt(v))
+      .optional(),
     duration: z.string(),
     category: z.string(),
     link: z.string(),
@@ -63,7 +67,7 @@ const youkuDanmuResultSchema = z.object({
   }),
 });
 
-type YoukuEpisodeInfo = z.infer<typeof youkuEpisodeInfoSchema>;
+// 移除未使用的类型别名，避免 Lint 警告
 
 export class YoukuScraper extends BaseScraper<typeof youkuIdSchema> {
   providerName = "youku";
@@ -94,64 +98,70 @@ export class YoukuScraper extends BaseScraper<typeof youkuIdSchema> {
     if (!youkuId) {
       return [];
     }
-    const allEpisodes: YoukuEpisodeInfo[] = [];
-    let page = 1;
+
     const pageSize = 20;
-    let totalEpisodes = 0;
+    const targetEpisode = episodeNumber ?? 1;
+    const targetPage = Math.max(1, Math.ceil(targetEpisode / pageSize));
 
-    while (true) {
-      try {
-        const pageResult = await this.getEpisodesPage(youkuId.showId, page, pageSize);
+    try {
+      // 辅助函数：过滤黑名单视频
+      const filterBlacklisted = <T extends { title: string }>(videos: T[]): T[] =>
+        videos.filter((video) => !this.EPISODE_BLACKLIST_KEYWORDS.some((keyword) => video.title.includes(keyword)));
 
-        if (!pageResult || !pageResult.videos || pageResult.videos.length === 0) {
-          break;
-        }
+      // 辅助函数：创建 ProviderEpisodeInfo 对象
+      const createEpisodeInfo = (
+        video: { id: string; title: string; seq?: number },
+        episodeNum: number,
+      ): ProviderEpisodeInfo => ({
+        provider: this.providerName,
+        episodeId: this.generateIdString({ showId: youkuId.showId, vid: video.id }),
+        episodeTitle: video.title,
+        episodeNumber: episodeNum,
+      });
 
-        // 第一页时获取总数
-        if (page === 1 && pageResult.total) {
-          totalEpisodes = pageResult.total;
-        }
+      // 步骤1：获取目标页数据
+      const firstPage = await this.getEpisodesPage(youkuId.showId, targetPage, pageSize);
+      const firstVideos = filterBlacklisted(firstPage?.videos ?? []);
 
-        // 过滤黑名单关键词
-        const filteredVideos = pageResult.videos.filter(
-          (video) => !this.EPISODE_BLACKLIST_KEYWORDS.some((keyword) => video.title.includes(keyword)),
-        );
-
-        allEpisodes.push(...filteredVideos);
-
-        // 检查是否已获取所有分集或当前页数据不足
-        if (allEpisodes.length >= totalEpisodes || pageResult.videos.length < pageSize) {
-          break;
-        }
-
-        // 如果指定了目标分集且已找到足够数量，停止分页
-        if (episodeNumber && allEpisodes.length >= episodeNumber) {
-          break;
-        }
-
-        page++;
-        await this.sleep(300); // 300ms延时
-      } catch (error) {
-        console.error(`Youku: Failed to get episodes page ${page} for media_id ${youkuId.showId}:`, error);
-        break;
+      // 步骤2：检查目标页是否包含目标集数
+      const matchedInFirst = firstVideos.find((v) => v.seq === targetEpisode);
+      if (matchedInFirst) {
+        return [createEpisodeInfo(matchedInFirst, targetEpisode)];
       }
+
+      // 步骤3：计算需要获取的其他页码
+      const total = Number(firstPage?.total ?? 0);
+      const totalPages = Math.max(1, Math.ceil(total / pageSize));
+      const remainingPages = Array.from({ length: totalPages }, (_, i) => i + 1).filter((p) => p !== targetPage);
+
+      // 步骤4：串行获取剩余页数据（避免QPS限制）
+      const remainingResults = [];
+      for (const page of remainingPages) {
+        await this.sleep(500); // 500ms延时避免QPS限制
+        const result = await this.getEpisodesPage(youkuId.showId, page, pageSize);
+        remainingResults.push(result);
+      }
+
+      // 步骤5：合并并过滤所有视频
+      const remainingVideos = filterBlacklisted(remainingResults.flatMap((res) => res?.videos ?? []));
+      const allVideos = [...firstVideos, ...remainingVideos];
+
+      // 步骤6：处理返回结果
+      if (episodeNumber !== undefined) {
+        // 指定了集数：查找并返回单集
+        const matched = allVideos.find((v) => v.seq === targetEpisode);
+        return matched ? [createEpisodeInfo(matched, targetEpisode)] : [];
+      }
+
+      // 未指定集数：返回所有集数（按seq排序）
+      const sortedVideos = allVideos.sort(
+        (a, b) => (a.seq ?? Number.MAX_SAFE_INTEGER) - (b.seq ?? Number.MAX_SAFE_INTEGER),
+      );
+      return sortedVideos.map((video, index) => createEpisodeInfo(video, index + 1));
+    } catch (error) {
+      console.error(`Youku: 获取分集失败 showId=${youkuId.showId}:`, error);
+      return [];
     }
-
-    // 转换为ProviderEpisodeInfo格式
-    const providerEpisodes = allEpisodes.map<ProviderEpisodeInfo>((ep, i) => ({
-      provider: this.providerName,
-      episodeId: this.generateIdString({ showId: youkuId.showId, vid: ep.id }),
-      episodeTitle: ep.title,
-      episodeNumber: i + 1,
-    }));
-
-    // 如果指定了目标分集，只返回该分集
-    if (episodeNumber !== undefined) {
-      const targetEpisode = providerEpisodes.find((ep) => ep.episodeNumber === episodeNumber);
-      return targetEpisode ? [targetEpisode] : [];
-    }
-
-    return providerEpisodes;
   }
 
   async getSegments(idString: string) {

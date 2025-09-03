@@ -63,7 +63,7 @@ export class Scraper {
           const scraper = this.scraperMap[provider];
           if (!scraper) return null;
           const comments = await scraper.getComments(idString, hit.segmentId);
-
+          if (!comments) return null;
           return { comments, provider };
         })(),
       );
@@ -112,13 +112,13 @@ export class Scraper {
     return this.getSegmentWithTime(segmentTime, ...items);
   }
 
-  private async getEpisodes(...args: { provider: string; idString: string }[]) {
+  private async getEpisodes(...args: { provider: string; idString: string; episodeNumber?: number }[]) {
     const tasks: Promise<ProviderEpisodeInfo[]>[] = [];
-    for (const { provider, idString } of args) {
+    for (const { provider, idString, episodeNumber } of args) {
       const scraper = this.scraperMap[provider];
       if (!scraper) continue;
       tasks.push(
-        scraper.getEpisodes(idString).catch((error) => {
+        scraper.getEpisodes(idString, episodeNumber).catch((error) => {
           console.error(error);
           return [];
         }),
@@ -137,29 +137,25 @@ export class Scraper {
     });
   }
 
-  private formatEpisodeResult(results: ProviderEpisodeInfo[], mediaType: MediaType, episode?: string) {
-    const episodeNumber = episode ? parseInt(episode ?? "") : undefined;
-    if (mediaType === MediaType.TV && episodeNumber) {
-      return results.filter((item) => {
-        return item.episodeNumber === episodeNumber;
-      });
+  private getEpisodeNumber(mediaType: MediaType, episode?: string) {
+    if (mediaType === MediaType.TV && episode) {
+      return parseInt(episode);
     }
-    return results;
+    return undefined;
   }
 
   async getDetailWithAnimeId(animeId: string, mediaType: MediaType, episode?: string) {
     const [provider, idString] = animeId.split(":");
-    const results = await this.getEpisodes({ provider, idString });
-    return this.formatEpisodeResult(results, mediaType, episode);
+    return await this.getEpisodes({ provider, idString, episodeNumber: this.getEpisodeNumber(mediaType, episode) });
   }
 
   async getDetailWithDoubanId(doubanId: string, mediaType: MediaType, episode?: string) {
     const response = await getVideoPlatformInfoByDoubanId(doubanId.toString());
+    const episodeNumber = this.getEpisodeNumber(mediaType, episode);
     const options: Parameters<typeof this.getEpisodes> = [];
     Object.entries(response.providers).forEach(([provider, item]) => {
-      options.push({ provider, idString: this.scraperMap[provider]?.generateIdString(item) ?? "" });
+      options.push({ provider, idString: this.scraperMap[provider]?.generateIdString(item) ?? "", episodeNumber });
     });
-    const results = await this.getEpisodes(...options);
-    return this.formatEpisodeResult(results, mediaType, episode);
+    return this.getEpisodes(...options);
   }
 }
