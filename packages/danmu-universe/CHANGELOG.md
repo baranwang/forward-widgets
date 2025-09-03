@@ -1,5 +1,11 @@
 # @forward-widget/danmu-universe
 
+## 0.0.6
+
+### Patch Changes
+
+- 3f0c1ff: 更新优酷抓取器以支持指定集数的获取，并优化分页逻辑
+
 ## 0.0.5
 
 ### Patch Changes
