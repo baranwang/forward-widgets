@@ -32,7 +32,9 @@ https://unpkg.com/@forward-widget/danmu-universe
 
 ## 开发
 
-欢迎社区贡献，如果你想为项目做出贡献
+项目自豪的使用 [forward-widget-libs](https://github.com/baranwang/forward-widget-libs) 开发工具链
+
+欢迎社区贡献，如果你想为项目做出贡献可按照以下流程：
 
 ### 环境要求
 
@@ -41,11 +43,15 @@ https://unpkg.com/@forward-widget/danmu-universe
 
 ### 安装依赖
 
+仓库根目录
+
 ```bash
 pnpm install
 ```
 
 ### 开发模式
+
+项目目录
 
 ```bash
 pnpm dev
@@ -62,6 +68,10 @@ pnpm build
 ```bash
 pnpm test
 ```
+
+### 提交
+
+在仓库根目录执行 `pnpm changeset` 创建 changeset 文件，同时使用标准的 Conventional Commits 提交代码
 
 ## 鸣谢
 
