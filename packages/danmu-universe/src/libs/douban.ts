@@ -152,9 +152,9 @@ export const getVideoPlatformInfoByDoubanId = async (doubanId: string) => {
       }
 
       case "youku": {
-        const { showid: showId } = uriObj.query;
-        if (showId) {
-          result.providers.youku = { showId };
+        const { showid: showId, vid } = uriObj.query;
+        if (showId || vid) {
+          result.providers.youku = { showId, vid };
         }
         break;
       }
@@ -190,7 +190,7 @@ if (import.meta.rstest) {
   });
 
   test("getVideoPlatformInfoByDoubanId", async () => {
-    const response = await getVideoPlatformInfoByDoubanId("35861087");
+    const response = await getVideoPlatformInfoByDoubanId("4922787");
     console.log(response);
     // const response = await getVideoPlatformInfoByDoubanId("34780991");
     // expect(response).toBeDefined();

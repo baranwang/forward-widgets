@@ -7,7 +7,7 @@ import { safeJsonParseWithZod } from "../libs/utils";
 import { BaseScraper, CommentMode, type ProviderEpisodeInfo } from "./base";
 
 const youkuIdSchema = z.object({
-  showId: z.string(),
+  showId: z.string().optional(),
   vid: z.string().optional(),
 });
 
@@ -16,6 +16,7 @@ export type YoukuId = z.infer<typeof youkuIdSchema>;
 const youkuEpisodeInfoSchema = z
   .object({
     id: z.string(),
+    show_id: z.string().optional(),
     title: z.string(),
     seq: z
       .string()
@@ -98,6 +99,14 @@ export class YoukuScraper extends BaseScraper<typeof youkuIdSchema> {
     if (!youkuId) {
       return [];
     }
+    let showId = youkuId.showId;
+    if (!showId && youkuId.vid) {
+      const videoInfo = await this.getVideoInfo(youkuId.vid);
+      showId = videoInfo?.show_id ?? "";
+    }
+    if (!showId) {
+      return [];
+    }
 
     const pageSize = 20;
     const targetEpisode = episodeNumber ?? 1;
@@ -114,13 +123,13 @@ export class YoukuScraper extends BaseScraper<typeof youkuIdSchema> {
         episodeNum: number,
       ): ProviderEpisodeInfo => ({
         provider: this.providerName,
-        episodeId: this.generateIdString({ showId: youkuId.showId, vid: video.id }),
+        episodeId: this.generateIdString({ showId, vid: video.id }),
         episodeTitle: video.title,
         episodeNumber: episodeNum,
       });
 
       // 步骤1：获取目标页数据
-      const firstPage = await this.getEpisodesPage(youkuId.showId, targetPage, pageSize);
+      const firstPage = await this.getEpisodesPage(showId, targetPage, pageSize);
       const firstVideos = filterBlacklisted(firstPage?.videos ?? []);
 
       // 步骤2：检查目标页是否包含目标集数
@@ -138,7 +147,7 @@ export class YoukuScraper extends BaseScraper<typeof youkuIdSchema> {
       const remainingResults = [];
       for (const page of remainingPages) {
         await this.sleep(500); // 500ms延时避免QPS限制
-        const result = await this.getEpisodesPage(youkuId.showId, page, pageSize);
+        const result = await this.getEpisodesPage(showId, page, pageSize);
         remainingResults.push(result);
       }
 
@@ -159,7 +168,7 @@ export class YoukuScraper extends BaseScraper<typeof youkuIdSchema> {
       );
       return sortedVideos.map((video, index) => createEpisodeInfo(video, index + 1));
     } catch (error) {
-      console.error(`Youku: 获取分集失败 showId=${youkuId.showId}:`, error);
+      console.error(`Youku: 获取分集失败 showId=${showId}:`, error);
       return [];
     }
   }
@@ -173,19 +182,7 @@ export class YoukuScraper extends BaseScraper<typeof youkuIdSchema> {
     try {
       // 确保token和cookie已设置
       await this.ensureTokenCookie();
-      // 获取视频基本信息
-      const response = await this.fetch.get("https://openapi.youku.com/v2/videos/show_basic.json", {
-        params: {
-          client_id: "53e6cc67237fc59a",
-          package: "com.huawei.hwvplayer.youku",
-          video_id: vid,
-        },
-        schema: youkuEpisodeInfoSchema,
-        cache: {
-          cacheKey: `youku:segments:${vid}`,
-        },
-      });
-      const episodeInfo = response.data;
+      const episodeInfo = await this.getVideoInfo(vid);
       if (!episodeInfo) {
         console.warn(`Youku: Failed to get episode info for vid ${vid}`);
         return [];
@@ -223,6 +220,21 @@ export class YoukuScraper extends BaseScraper<typeof youkuIdSchema> {
       console.error(`Youku: Failed to get danmaku for vid ${vid}:`, error);
       return [];
     }
+  }
+
+  private async getVideoInfo(vid: string) {
+    const response = await this.fetch.get("https://openapi.youku.com/v2/videos/show_basic.json", {
+      params: {
+        client_id: "53e6cc67237fc59a",
+        package: "com.huawei.hwvplayer.youku",
+        video_id: vid,
+      },
+      schema: youkuEpisodeInfoSchema,
+      cache: {
+        cacheKey: `youku:segments:${vid}`,
+      },
+    });
+    return response.data;
   }
 
   private async getEpisodesPage(showId: string, page: number, pageSize: number) {

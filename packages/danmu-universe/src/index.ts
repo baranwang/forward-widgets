@@ -130,7 +130,7 @@ if (import.meta.rstest) {
 
   test("searchDanmu", async () => {
     // const danmu = await searchDanmu({ tmdbId: "1139695", type: "movie" } as SearchDanmuParams);
-    const danmu = await searchDanmu({ tmdbId: "252640", type: "tv", episode: "39" } as SearchDanmuParams);
+    const danmu = await searchDanmu({ tmdbId: "50878", type: "tv", episode: "1" } as SearchDanmuParams);
     console.log(danmu);
     expect(danmu).toBeDefined();
     expect(danmu?.animes.length).toBeGreaterThan(0);
