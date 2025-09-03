@@ -1,5 +1,11 @@
 # @forward-widget/danmu-universe
 
+## 0.0.7
+
+### Patch Changes
+
+- c0cf87d: 修复优酷陈年老剧数据格式不同的兼容性问题
+
 ## 0.0.6
 
 ### Patch Changes
