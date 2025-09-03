@@ -41,7 +41,7 @@ jobs:
         id: package_list
         if: steps.changesets.outputs.published == 'true'
         run: |
-          echo "packages=$(echo '${{ steps.changesets.outputs.publishedPackages }}' | jq -r '.[] | " - \(.name)@\(.version)"')" >> $GITHUB_OUTPUT
+          echo "packages=$(echo '${{ steps.changesets.outputs.publishedPackages }}' | jq -r '.[] | "- [\(.name)@\(.version)](forward://widget?url=https://unpkg.com/\(.name))"')" >> $GITHUB_OUTPUT
 
       - name: Notify on Release
         if: steps.changesets.outputs.published == 'true'
