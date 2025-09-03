@@ -1,5 +1,13 @@
 # @forward-widget/danmu-universe
 
+## 0.0.5
+
+### Patch Changes
+
+- e76afad: 将 Bilibili 抓取器中的评论 ID 转换为字符串格式
+- be4d9b2: 优化弹幕处理逻辑，调整各个抓取器的评论获取方式
+- fe7dcd8: 修复优酷弹幕加载失败的问题
+
 ## 0.0.4
 
 ### Patch Changes
