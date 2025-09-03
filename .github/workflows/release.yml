@@ -41,11 +41,6 @@ jobs:
         id: package_list
         if: steps.changesets.outputs.published == 'true'
         run: |
-          # 使用 jq 解析 JSON，并格式化成 " - 包名@版本号" 的格式
-          # jq 的 -r 参数表示输出原始字符串，而不是带引号的 JSON 字符串
-          # .[] 表示遍历数组中的每个元素
-          # " - \(.name)@\(.version)" 是格式化字符串
-          # 最后通过 GITHUB_OUTPUT 将这个多行字符串设置为一个名为 "packages" 的输出
           echo "packages=$(echo '${{ steps.changesets.outputs.publishedPackages }}' | jq -r '.[] | " - \(.name)@\(.version)"')" >> $GITHUB_OUTPUT
 
       - name: Notify on Release
@@ -59,4 +54,4 @@ jobs:
 
             ${{ steps.package_list.outputs.packages }}
 
-            更新详情请查看 ${GITHUB_REPOSITORY}
+            更新详情请查看 https://github.com/${{ github.repository }}
