@@ -1,4 +1,5 @@
 import { merge, omit } from "es-toolkit";
+import { qs } from "url-parse";
 import { z } from "zod";
 import { storage } from "./storage";
 
@@ -156,10 +157,17 @@ export class Fetch {
 
     const body = isGet ? undefined : bodyOrOptions;
 
-    const { timeout, schema: _, ...restOptions } = requestOptions;
+    const { timeout, schema: _, params, ...restOptions } = requestOptions;
 
-    console.debug("fetch", url, body, restOptions);
-    const requestPromise = isGet ? Widget.http.get<T>(url, restOptions) : Widget.http.post<T>(url, body, restOptions);
+    let finalUrl = url;
+    if (params) {
+      finalUrl = `${url}?${qs.stringify(params)}`;
+    }
+
+    console.debug("⬆️ fetch", url, body ?? "", { ...restOptions, params });
+    const requestPromise = isGet
+      ? Widget.http.get<T>(finalUrl, restOptions)
+      : Widget.http.post<T>(finalUrl, body, restOptions);
 
     if (timeout && timeout > 0) {
       return Promise.race([requestPromise, this.createTimeoutPromise(timeout)]);

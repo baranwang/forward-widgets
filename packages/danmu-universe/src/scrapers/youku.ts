@@ -72,6 +72,14 @@ export class YoukuScraper extends BaseScraper<typeof youkuIdSchema> {
 
   private readonly EPISODE_BLACKLIST_KEYWORDS = ["彩蛋", "加更", "走心", "解忧", "纯享"];
 
+  constructor() {
+    super();
+    this.fetch.setHeaders({
+      "User-Agent":
+        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36",
+    });
+  }
+
   private get token() {
     const tokenValue = this.fetch.getCookie("_m_h5_tk")?.split("_")[0] ?? "";
     // C# 版本只使用前32个字符用于签名计算
@@ -262,7 +270,7 @@ export class YoukuScraper extends BaseScraper<typeof youkuIdSchema> {
           params: {
             jsv: "2.7.0",
             appKey: appKey,
-            t: t,
+            t,
             sign: this.generateTokenSign(t, appKey, dataPayload),
             api: "mopen.youku.danmu.list",
             v: "1.0",
@@ -335,27 +343,25 @@ export class YoukuScraper extends BaseScraper<typeof youkuIdSchema> {
    * 此逻辑严格参考了 Python 代码，并针对网络环境进行了优化。
    */
   private async ensureTokenCookie() {
+    this.fetch.cookie = {};
+
     // 步骤 1: 获取 'cna' cookie。它通常由优酷主站或其统计服务设置。
-    // 我们优先访问主站，因为它更不容易出网络问题。
-    if (!this.cna) {
-      try {
-        console.debug("Youku: 'cna' cookie 未找到, 正在访问 youku.com 以获取...");
-        await this.fetch.get("https://log.mmstat.com/eg.js");
-      } catch (error) {
-        console.warn(`Youku: 无法连接到 youku.com 获取 'cna' cookie。错误: ${error}`);
-      }
+    try {
+      await this.fetch.get("https://log.mmstat.com/eg.js", {
+        headers: {
+          Cookie: "",
+          "If-None-Match": "",
+        },
+      });
+    } catch (error) {
+      console.warn(`Youku: 无法连接到 youku.com 获取 'cna' cookie。错误: ${error}`);
     }
 
     // 步骤 2: 获取 '_m_h5_tk' 令牌, 此请求可能依赖于 'cna' cookie 的存在。
-    if (!this.token) {
-      try {
-        console.debug("Youku: '_m_h5_tk' cookie 未找到, 正在从 acs.youku.com 请求...");
-        await this.fetch.get(
-          "https://acs.youku.com/h5/mtop.com.youku.aplatform.weakget/1.0/?jsv=2.5.1&appKey=24679788",
-        );
-      } catch (error) {
-        console.error(`Youku: 无法连接到 acs.youku.com 获取令牌 cookie。弹幕获取很可能会失败。错误: ${error}`);
-      }
+    try {
+      await this.fetch.get("https://acs.youku.com/h5/mtop.com.youku.aplatform.weakget/1.0/?jsv=2.5.1&appKey=24679788");
+    } catch (error) {
+      console.error(`Youku: 无法连接到 acs.youku.com 获取令牌 cookie。弹幕获取很可能会失败。错误: ${error}`);
     }
 
     if (!this.cna || !this.token) {
