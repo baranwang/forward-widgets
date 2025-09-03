@@ -1,0 +1,19 @@
+name: Release Notification
+
+on:
+  release:
+    types: [published]
+
+jobs:
+  notify-on-release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Send Telegram Notification on New Release
+        uses: cbrgm/telegram-github-action@v1
+        with:
+          token: ${{ secrets.TELEGRAM_TOKEN }}
+          to: ${{ secrets.TELEGRAM_CHAT_ID }}
+          message: |
+            🚀 ${{ github.event.release.tag_name }} 发布
+            更新内容：
+            ${{ github.event.release.html_url }}j
