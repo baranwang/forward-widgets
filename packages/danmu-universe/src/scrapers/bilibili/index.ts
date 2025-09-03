@@ -117,7 +117,7 @@ export class BilibiliScraper extends BaseScraper<typeof bilibiliIdSchema> {
         return null;
       }
       return {
-        id: comment.id,
+        id: comment.id.toString(),
         timestamp: comment.progress / 1000.0,
         mode: comment.mode ?? CommentMode.SCROLL,
         color: comment.color ?? 16777215,
@@ -176,9 +176,6 @@ if (import.meta.rstest) {
     const comments = await scraper.getComments(episodes[0].episodeId, segments[0].segmentId);
     expect(comments).toBeDefined();
     expect(comments.length).toBeGreaterThan(0);
-    import("node:fs").then((fs) => {
-      fs.writeFileSync("bilibili.json", JSON.stringify(comments, null, 2));
-    });
     console.log("获取", comments.length, "条弹幕");
   });
 }
