@@ -1,11 +1,13 @@
 import parseUrl from "url-parse";
 import { z } from "zod";
 import { DOUBAN_API_KEY, MediaType } from "../constants";
+import type { BilibiliId } from "../scrapers/bilibili";
+import type { IqiyiId } from "../scrapers/iqiyi";
 import type { TencentId } from "../scrapers/tencent";
+import type { YoukuId } from "../scrapers/youku";
 import { Fetch } from "./fetch";
 import { TTL_7_DAYS } from "./storage";
 import { getExternalIdsByTmdbId } from "./tmdb";
-import type { Douban2VideoPlatformResponse } from "./types";
 
 const fetch = new Fetch();
 
@@ -94,6 +96,16 @@ const doubanInfoResponseSchema = z.object({
   ),
 });
 
+export interface Douban2VideoPlatformResponse {
+  mediaType: MediaType;
+  providers: {
+    tencent?: TencentId;
+    iqiyi?: IqiyiId;
+    youku?: YoukuId;
+    bilibili?: BilibiliId;
+  };
+}
+
 /**
  * 通过豆瓣 ID 获取视频平台信息
  */
@@ -127,20 +139,14 @@ export const getVideoPlatformInfoByDoubanId = async (doubanId: string) => {
       case "qq": {
         const { cid, vid } = uriObj.query;
         if (cid) {
-          const tencentId: TencentId = {
-            cid,
-          };
-          if (result.mediaType === MediaType.Movie) {
-            tencentId.vid = vid;
-          }
-          result.providers.tencent = { id: encodeURIComponent(JSON.stringify(tencentId)) };
+          result.providers.tencent = { cid, vid };
         }
         break;
       }
       case "iqiyi": {
-        const { tvid } = uriObj.query;
-        if (tvid) {
-          result.providers.iqiyi = { id: tvid };
+        const { tvid: entityId } = uriObj.query;
+        if (entityId) {
+          result.providers.iqiyi = { entityId };
         }
         break;
       }
@@ -148,7 +154,7 @@ export const getVideoPlatformInfoByDoubanId = async (doubanId: string) => {
       case "youku": {
         const { showid: showId } = uriObj.query;
         if (showId) {
-          result.providers.youku = { id: showId };
+          result.providers.youku = { showId };
         }
         break;
       }
@@ -156,7 +162,7 @@ export const getVideoPlatformInfoByDoubanId = async (doubanId: string) => {
       case "bilibili": {
         const seasonId = uriObj.pathname.split("/").pop();
         if (seasonId && /\d+/.test(seasonId)) {
-          result.providers.bilibili = { id: encodeURIComponent(JSON.stringify({ seasonId })) };
+          result.providers.bilibili = { seasonId };
         }
         break;
       }
@@ -184,7 +190,7 @@ if (import.meta.rstest) {
   });
 
   test("getVideoPlatformInfoByDoubanId", async () => {
-    const response = await getVideoPlatformInfoByDoubanId("26749938");
+    const response = await getVideoPlatformInfoByDoubanId("35691814");
     console.log(response);
     // const response = await getVideoPlatformInfoByDoubanId("34780991");
     // expect(response).toBeDefined();

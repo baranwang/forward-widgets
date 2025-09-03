@@ -6,6 +6,13 @@ import { z } from "zod";
 import { safeJsonParseWithZod } from "../libs/utils";
 import { BaseScraper, CommentMode, type ProviderEpisodeInfo } from "./base";
 
+const youkuIdSchema = z.object({
+  showId: z.string(),
+  vid: z.string().optional(),
+});
+
+export type YoukuId = z.infer<typeof youkuIdSchema>;
+
 const youkuEpisodeInfoSchema = z
   .object({
     id: z.string(),
@@ -58,8 +65,10 @@ const youkuDanmuResultSchema = z.object({
 
 type YoukuEpisodeInfo = z.infer<typeof youkuEpisodeInfoSchema>;
 
-export class YoukuScraper extends BaseScraper {
+export class YoukuScraper extends BaseScraper<typeof youkuIdSchema> {
   providerName = "youku";
+
+  protected idSchema = youkuIdSchema;
 
   private readonly EPISODE_BLACKLIST_KEYWORDS = ["彩蛋", "加更", "走心", "解忧", "纯享"];
 
@@ -72,7 +81,11 @@ export class YoukuScraper extends BaseScraper {
     return this.fetch.getCookie("cna") ?? "";
   }
 
-  async getEpisodes(mediaId: string, episodeNumber?: number) {
+  async getEpisodes(idString: string, episodeNumber?: number) {
+    const youkuId = this.parseIdString(idString);
+    if (!youkuId) {
+      return [];
+    }
     const allEpisodes: YoukuEpisodeInfo[] = [];
     let page = 1;
     const pageSize = 20;
@@ -80,7 +93,7 @@ export class YoukuScraper extends BaseScraper {
 
     while (true) {
       try {
-        const pageResult = await this.getEpisodesPage(mediaId, page, pageSize);
+        const pageResult = await this.getEpisodesPage(youkuId.showId, page, pageSize);
 
         if (!pageResult || !pageResult.videos || pageResult.videos.length === 0) {
           break;
@@ -111,7 +124,7 @@ export class YoukuScraper extends BaseScraper {
         page++;
         await this.sleep(300); // 300ms延时
       } catch (error) {
-        console.error(`Youku: Failed to get episodes page ${page} for media_id ${mediaId}:`, error);
+        console.error(`Youku: Failed to get episodes page ${page} for media_id ${youkuId.showId}:`, error);
         break;
       }
     }
@@ -119,7 +132,7 @@ export class YoukuScraper extends BaseScraper {
     // 转换为ProviderEpisodeInfo格式
     const providerEpisodes = allEpisodes.map<ProviderEpisodeInfo>((ep, i) => ({
       provider: this.providerName,
-      episodeId: ep.id,
+      episodeId: this.generateIdString({ showId: youkuId.showId, vid: ep.id }),
       episodeTitle: ep.title,
       episodeNumber: i + 1,
       url: ep.link,
@@ -134,7 +147,12 @@ export class YoukuScraper extends BaseScraper {
     return providerEpisodes;
   }
 
-  async getSegments(vid: string) {
+  async getSegments(idString: string) {
+    const { vid } = this.parseIdString(idString) ?? {};
+    if (!vid) {
+      return [];
+    }
+
     try {
       // 确保token和cookie已设置
       await this.ensureTokenCookie();
@@ -174,14 +192,18 @@ export class YoukuScraper extends BaseScraper {
     }
   }
 
-  async getComments(episodeId: string, segmentId: string): Promise<CommentItem[]> {
+  async getComments(idString: string, segmentId: string): Promise<CommentItem[]> {
+    const { vid } = this.parseIdString(idString) ?? {};
+    if (!vid) {
+      return [];
+    }
     try {
       // 确保token和cookie已设置
       await this.ensureTokenCookie();
 
-      return this.getDanmuContentByMat(episodeId, parseInt(segmentId, 10));
+      return this.getDanmuContentByMat(vid, parseInt(segmentId, 10));
     } catch (error) {
-      console.error(`Youku: Failed to get danmaku for vid ${episodeId}:`, error);
+      console.error(`Youku: Failed to get danmaku for vid ${vid}:`, error);
       return [];
     }
   }

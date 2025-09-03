@@ -22,10 +22,10 @@ export class Scraper {
     return keyBy(this.scrapers, (scraper) => scraper.providerName);
   }
 
-  private async getSegmentsByProvider(provider: string, videoId: string): Promise<ProviderSegmentInfo[]> {
+  private async getSegmentsByProvider(provider: string, idString: string): Promise<ProviderSegmentInfo[]> {
     const scraper = this.scraperMap[provider];
     if (!scraper) return [];
-    let segments = await scraper.getSegments(videoId);
+    let segments = await scraper.getSegments(idString);
     segments = sortBy(segments, ["startTime"]);
     return segments;
   }
@@ -50,17 +50,17 @@ export class Scraper {
     return segments[idx] ?? null;
   }
 
-  async getSegmentWithTime(segmentTime = 0, ...args: { videoId: string; provider: string }[]) {
+  async getSegmentWithTime(segmentTime = 0, ...args: { provider: string; idString: string }[]) {
     const tasks: Promise<CommentItem[]>[] = [];
 
-    for (const { provider, videoId } of args) {
+    for (const { provider, idString } of args) {
       tasks.push(
         (async () => {
-          const segments = await this.getSegmentsByProvider(provider, videoId);
+          const segments = await this.getSegmentsByProvider(provider, idString);
           if (!segments.length) return [];
           const hit = this.findSegmentAtTime(segments, segmentTime);
           if (!hit) return [];
-          return this.scraperMap[provider]?.getComments(videoId, hit.segmentId);
+          return this.scraperMap[provider]?.getComments(idString, hit.segmentId);
         })(),
       );
     }
@@ -71,22 +71,22 @@ export class Scraper {
 
   getDanmuWithSegmentTimeByVideoId(id: string, segmentTime: number) {
     const items = id.split(",").map((item) => {
-      const [provider, videoId] = item.split(":");
+      const [provider, idString] = item.split(":");
       return {
         provider,
-        videoId,
+        idString,
       };
     });
     return this.getSegmentWithTime(segmentTime, ...items);
   }
 
-  private async getEpisodes(...args: { provider: string; mediaId: string }[]) {
+  private async getEpisodes(...args: { provider: string; idString: string }[]) {
     const tasks: Promise<ProviderEpisodeInfo[]>[] = [];
-    for (const { provider, mediaId } of args) {
+    for (const { provider, idString } of args) {
       const scraper = this.scraperMap[provider];
       if (!scraper) continue;
       tasks.push(
-        scraper.getEpisodes(mediaId).catch((error) => {
+        scraper.getEpisodes(idString).catch((error) => {
           console.error(error);
           return [];
         }),
@@ -116,16 +116,16 @@ export class Scraper {
   }
 
   async getDetailWithAnimeId(animeId: string, mediaType: MediaType, episode?: string) {
-    const [provider, episodeId] = animeId.split(":");
-    const results = await this.getEpisodes({ provider, mediaId: episodeId });
+    const [provider, idString] = animeId.split(":");
+    const results = await this.getEpisodes({ provider, idString });
     return this.formatEpisodeResult(results, mediaType, episode);
   }
 
   async getDetailWithDoubanId(doubanId: string, mediaType: MediaType, episode?: string) {
     const response = await getVideoPlatformInfoByDoubanId(doubanId.toString());
     const options: Parameters<typeof this.getEpisodes> = [];
-    Object.entries(response.providers).forEach(([provider, { id }]) => {
-      options.push({ provider, mediaId: id });
+    Object.entries(response.providers).forEach(([provider, item]) => {
+      options.push({ provider, idString: this.scraperMap[provider]?.generateIdString(item) ?? "" });
     });
     const results = await this.getEpisodes(...options);
     return this.formatEpisodeResult(results, mediaType, episode);

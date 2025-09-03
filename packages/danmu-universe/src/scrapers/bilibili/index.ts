@@ -112,7 +112,7 @@ export class BilibiliScraper extends BaseScraper<typeof bilibiliIdSchema> {
       if (!comment.progress) {
         return null;
       }
-      const sanitizedContent = comment.content?.replace(/\0/g, "") || "";
+      const sanitizedContent = comment.content?.toString().replace(/\0/g, "") || "";
       if (!sanitizedContent) {
         return null;
       }

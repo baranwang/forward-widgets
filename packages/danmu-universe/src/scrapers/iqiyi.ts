@@ -4,6 +4,13 @@ import { XMLParser } from "fast-xml-parser";
 import { z } from "zod";
 import { BaseScraper, CommentMode, type ProviderEpisodeInfo } from "./base";
 
+const iqiyiIdSchema = z.object({
+  /** entity_id / tv_id */
+  entityId: z.string(),
+});
+
+export type IqiyiId = z.infer<typeof iqiyiIdSchema>;
+
 const iqiyiEpisodeTabDataVideoSchema = z
   .object({
     page_url: z.string(),
@@ -124,10 +131,12 @@ const iqiyiCommentsResponseSchema = z
   })
   .transform((v) => v.danmu.data.entry);
 
-export class IqiyiScraper extends BaseScraper {
+export class IqiyiScraper extends BaseScraper<typeof iqiyiIdSchema> {
   providerName = "iqiyi";
 
   private readonly xmlParser = new XMLParser();
+
+  protected idSchema = iqiyiIdSchema;
 
   protected PROVIDER_SPECIFIC_BLACKLIST_DEFAULT =
     "^(.*?)(抢先(版|篇)?|加更(版|篇)?|花絮|预告|特辑|彩蛋|专访|幕后(故事|花絮)?|直播|纯享|未播|衍生|番外|会员(专属|加长)?|片花|精华|看点|速览|解读|reaction|影评)(.*?)$";
@@ -147,10 +156,14 @@ export class IqiyiScraper extends BaseScraper {
     });
   }
 
-  async getEpisodes(mediaId: string, episodeNumber?: number) {
+  async getEpisodes(idString: string, episodeNumber?: number) {
+    const iqiyiId = this.parseIdString(idString);
+    if (!iqiyiId) {
+      return [];
+    }
     let providerEpisodes: ProviderEpisodeInfo[] = [];
     try {
-      providerEpisodes = await this.getEpisodesV3(mediaId);
+      providerEpisodes = await this.getEpisodesV3(iqiyiId.entityId);
     } catch (error) {
       console.warn(`爱奇艺: 新版API (v3) 获取分集时发生错误: ${error}`, error);
       providerEpisodes = [];
@@ -163,7 +176,11 @@ export class IqiyiScraper extends BaseScraper {
   }
 
   async getSegments(episodeId: string) {
-    const baseInfo = await this.getVideoBaseInfo(episodeId);
+    const iqiyiId = this.parseIdString(episodeId);
+    if (!iqiyiId) {
+      return [];
+    }
+    const baseInfo = await this.getVideoBaseInfo(iqiyiId.entityId);
     const duration = baseInfo?.durationSec;
     if (!duration) {
       return [];
@@ -177,12 +194,11 @@ export class IqiyiScraper extends BaseScraper {
   }
 
   async getComments(episodeId: string, segmentId: string) {
-    const baseInfo = await this.getVideoBaseInfo(episodeId);
-    if (!baseInfo) {
-      console.warn(`爱奇艺: 无法将 video_id '${episodeId}' 转换为 entity_id。`);
+    const iqiyiId = this.parseIdString(episodeId);
+    if (!iqiyiId) {
       return [];
     }
-    const tvId = baseInfo?.tvId.toString();
+    const tvId = iqiyiId.entityId;
 
     if (!tvId || tvId.length < 4) {
       return [];
@@ -277,8 +293,8 @@ export class IqiyiScraper extends BaseScraper {
           if (ep.mark_type_show === 17) {
             continue;
           }
-          const tvId = this.videoIdToEntityId(ep.videoId);
-          if (!tvId) {
+          const entityId = this.videoIdToEntityId(ep.videoId);
+          if (!entityId) {
             continue;
           }
           if (blacklistPattern?.test(ep.title)) {
@@ -286,7 +302,7 @@ export class IqiyiScraper extends BaseScraper {
           }
           episodes.push({
             provider: this.providerName,
-            episodeId: tvId,
+            episodeId: this.generateIdString({ entityId }),
             episodeTitle: ep.title,
             episodeNumber: this.getEpisodeIndexFromTitle(ep.short_display_name) ?? episodeIndex,
             url: ep.page_url,
