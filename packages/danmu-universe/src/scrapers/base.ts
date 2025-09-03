@@ -11,8 +11,6 @@ export interface ProviderEpisodeInfo {
   episodeTitle: string;
   /** 分集序号 */
   episodeNumber: number;
-  /** 分集原始URL */
-  url?: string;
 }
 
 export interface ProviderSegmentInfo {
@@ -32,8 +30,9 @@ export enum CommentMode {
   TOP = 5,
 }
 
-interface ProviderCommentItem {
-  id: string | number;
+export interface ProviderCommentItem {
+  /** 弹幕ID */
+  id: string;
   /** 弹幕时间戳(秒) */
   timestamp: number;
   /** 弹幕模式 */
@@ -70,53 +69,12 @@ export abstract class BaseScraper<IDType extends z.ZodType = any> {
 
   abstract getSegments(idString: string): Promise<ProviderSegmentInfo[]>;
 
-  abstract getComments(idString: string, segmentId: string): Promise<CommentItem[]>;
+  abstract getComments(idString: string, segmentId: string): Promise<Array<ProviderCommentItem | null> | null>;
 
   protected fetch = new Fetch();
 
   protected sleep(ms: number) {
     return new Promise((resolve) => setTimeout(resolve, ms));
-  }
-
-  protected formatComments<T>(rawComments: T[], transformer: (item: T) => ProviderCommentItem | null): CommentItem[] {
-    const seenIds = new Set<string | number>();
-    const contentMap = new Map<string, { item: ProviderCommentItem; count: number }>();
-
-    for (const raw of rawComments) {
-      if (!raw) {
-        continue;
-      }
-      const item = transformer(raw);
-      if (!item) {
-        continue;
-      }
-
-      if (seenIds.has(item.id)) continue;
-      seenIds.add(item.id);
-
-      const key = item.content;
-      const existing = contentMap.get(key);
-      if (!existing) {
-        contentMap.set(key, { item, count: 1 });
-      } else {
-        if (item.timestamp < existing.item.timestamp) {
-          existing.item = item;
-        }
-        existing.count += 1;
-      }
-    }
-
-    const result: CommentItem[] = [];
-    contentMap.forEach(({ item, count }) => {
-      const content = count > 1 ? `${item.content} × ${count}` : item.content;
-      result.push({
-        cid: item.id,
-        p: `${item.timestamp.toFixed(2)},${item.mode},${item.color},[${this.providerName}]` as CommentItem["p"],
-        m: content,
-      });
-    });
-
-    return result;
   }
 
   protected getEpisodeIndexFromTitle(title: string): number | null {

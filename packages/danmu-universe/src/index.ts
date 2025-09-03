@@ -126,15 +126,11 @@ getComments = async (params) => {
 };
 
 if (import.meta.rstest) {
-  const { test, expect, rstest, beforeAll } = import.meta.rstest;
-
-  beforeAll(async () => {
-    const { WidgetAdaptor } = await import("@forward-widget/libs/widget-adaptor");
-    rstest.stubGlobal("Widget", WidgetAdaptor);
-  });
+  const { test, expect } = import.meta.rstest;
 
   test("searchDanmu", async () => {
-    const danmu = await searchDanmu({ tmdbId: "1139695", type: "movie" } as SearchDanmuParams);
+    // const danmu = await searchDanmu({ tmdbId: "1139695", type: "movie" } as SearchDanmuParams);
+    const danmu = await searchDanmu({ tmdbId: "243224", type: "tv", episode: "22" } as SearchDanmuParams);
     console.log(danmu);
     expect(danmu).toBeDefined();
     expect(danmu?.animes.length).toBeGreaterThan(0);

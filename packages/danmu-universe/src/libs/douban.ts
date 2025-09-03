@@ -190,7 +190,7 @@ if (import.meta.rstest) {
   });
 
   test("getVideoPlatformInfoByDoubanId", async () => {
-    const response = await getVideoPlatformInfoByDoubanId("35691814");
+    const response = await getVideoPlatformInfoByDoubanId("35861087");
     console.log(response);
     // const response = await getVideoPlatformInfoByDoubanId("34780991");
     // expect(response).toBeDefined();

@@ -2,7 +2,7 @@ import { qs } from "url-parse";
 import { z } from "zod";
 import { TTL_2_HOURS } from "../libs/storage";
 import { safeJsonParseWithZod } from "../libs/utils";
-import { BaseScraper, CommentMode } from "./base";
+import { BaseScraper, CommentMode, type ProviderEpisodeInfo } from "./base";
 
 const tencentIdSchema = z.object({
   cid: z.string(),
@@ -116,20 +116,16 @@ export class TencentScraper extends BaseScraper<typeof tencentIdSchema> {
     // 获取指定cid的所有分集列表
     // mediaId 对于腾讯来说就是 cid
     const tencentEpisodes = await this.internalGetEpisodes(tencentId.cid);
-    const allProviderEpisodes = tencentEpisodes.map((ep, i) => {
+    const allProviderEpisodes = tencentEpisodes.map<ProviderEpisodeInfo>((ep, i) => {
       let episodeIndex = this.getEpisodeIndexFromTitle(ep.title);
       if (!episodeIndex) {
         episodeIndex = i + 1;
       }
       return {
         provider: this.providerName,
-        episodeId: this.generateIdString({
-          cid: tencentId.cid,
-          vid: ep.vid,
-        }),
+        episodeId: this.generateIdString({ cid: tencentId.cid, vid: ep.vid }),
         episodeTitle: ep.union_title && ep.union_title !== ep.title ? ep.union_title : ep.title,
         episodeNumber: episodeIndex,
-        url: `https://v.qq.com/x/cover/${tencentId.cid}/${ep.vid}.html`,
       };
     });
 
@@ -195,7 +191,7 @@ export class TencentScraper extends BaseScraper<typeof tencentIdSchema> {
       return [];
     }
 
-    return this.formatComments(rawComments, (c) => {
+    return rawComments.map((c) => {
       let mode = CommentMode.SCROLL; // 滚动
       let color = 16777215; // 白色
       if (c.content_style) {
@@ -214,7 +210,7 @@ export class TencentScraper extends BaseScraper<typeof tencentIdSchema> {
         }
       }
       return {
-        id: c.id,
+        id: c.id.toString(),
         timestamp: parseInt(c.time_offset, 10) / 1000.0,
         mode,
         color,

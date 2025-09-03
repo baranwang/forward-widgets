@@ -67,7 +67,6 @@ export class BilibiliScraper extends BaseScraper<typeof bilibiliIdSchema> {
           aid: item.aid.toString(),
           cid: item.cid.toString(),
         }),
-
         episodeTitle: item.show_title || item.title,
         episodeNumber: episodeIndex,
       });
@@ -97,18 +96,21 @@ export class BilibiliScraper extends BaseScraper<typeof bilibiliIdSchema> {
     }));
   }
 
-  async getComments(episodeId: string, segmentId: string) {
-    const { aid, cid, seasonId } = this.parseIdString(episodeId) ?? {};
+  async getComments(idString: string, segmentId: string) {
+    const { aid, cid, seasonId } = this.parseIdString(idString) ?? {};
     if (!aid || !cid || !seasonId) {
-      return [];
+      return null;
     }
     const episodes = await this.getPgcEpisodes(seasonId);
     const episode = episodes?.find((ep) => ep.aid === parseInt(aid) && ep.cid === parseInt(cid));
     if (!episode) {
-      return [];
+      return null;
     }
     const comments = await this.fetchCommentsForCid(aid, cid, segmentId);
-    return this.formatComments(comments, (comment) => {
+    if (!comments) {
+      return null;
+    }
+    return comments.map((comment) => {
       if (!comment.progress) {
         return null;
       }
@@ -141,7 +143,6 @@ export class BilibiliScraper extends BaseScraper<typeof bilibiliIdSchema> {
   }
 
   private async fetchCommentsForCid(aid: string, cid: string, segmentIndex: string) {
-    const results: biliproto.community.service.dm.v1.IDanmakuElem[] = [];
     try {
       const response = await this.fetch.get<string>(
         `https://api.bilibili.com/x/v2/dm/web/seg.so?type=1&oid=${cid}&pid=${aid}&segment_index=${segmentIndex}`,
@@ -149,14 +150,15 @@ export class BilibiliScraper extends BaseScraper<typeof bilibiliIdSchema> {
           base64Data: true,
         },
       );
-      if (response.statusCode === 404 || response.statusCode === 304) return results;
+      if (response.statusCode === 404 || response.statusCode === 304) return null;
       const data = this.DmSegMobileReply.decode(base64ToUint8Array(response.data));
-      results.push(...data.elems);
+      console.log(data);
+      return data.elems;
     } catch (error) {
       console.error(`获取分段 ${segmentIndex} 失败 (aid=${aid}, cid=${cid}): ${error}`);
     }
 
-    return results;
+    return null;
   }
 }
 
@@ -175,7 +177,7 @@ if (import.meta.rstest) {
 
     const comments = await scraper.getComments(episodes[0].episodeId, segments[0].segmentId);
     expect(comments).toBeDefined();
-    expect(comments.length).toBeGreaterThan(0);
-    console.log("获取", comments.length, "条弹幕");
+    expect(comments?.length).toBeGreaterThan(0);
+    console.log("获取", comments?.length, "条弹幕");
   });
 }

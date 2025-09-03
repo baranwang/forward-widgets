@@ -218,13 +218,13 @@ export class IqiyiScraper extends BaseScraper<typeof iqiyiIdSchema> {
       return [];
     }
 
-    return this.formatComments(data, (comment) => {
+    return data.map((comment) => {
       let color = 16777215;
       try {
         color = parseInt(comment.color, 16);
       } catch (error) {}
       return {
-        id: comment.contentId,
+        id: comment.contentId.toString(),
         timestamp: comment.showTime,
         mode: CommentMode.SCROLL,
         color,
@@ -305,7 +305,6 @@ export class IqiyiScraper extends BaseScraper<typeof iqiyiIdSchema> {
             episodeId: this.generateIdString({ entityId }),
             episodeTitle: ep.title,
             episodeNumber: this.getEpisodeIndexFromTitle(ep.short_display_name) ?? episodeIndex,
-            url: ep.page_url,
           });
           episodeIndex += 1;
         }
@@ -380,21 +379,16 @@ if (import.meta.rstest) {
   test("iqiyi", async () => {
     const scraper = new IqiyiScraper();
 
-    const episodes = await scraper.getEpisodes("5298806780347900");
+    const episodes = await scraper.getEpisodes(scraper.generateIdString({ entityId: "5298806780347900" }));
     expect(episodes).toBeDefined();
     expect(episodes.length).toBeGreaterThan(0);
 
-    const segments = await scraper.getSegments("5298806780347900");
+    const segments = await scraper.getSegments(episodes[0].episodeId);
     expect(segments).toBeDefined();
     expect(segments.length).toBeGreaterThan(0);
 
-    const comments = await scraper.getComments("5298806780347900", segments[0].segmentId);
+    const comments = await scraper.getComments(episodes[0].episodeId, segments[0].segmentId);
     expect(comments).toBeDefined();
     expect(comments.length).toBeGreaterThan(0);
-
-    // const episodes = await scraper.getEpisodes("1for8p7vk40");
-    // console.log(episodes);
-    // expect(episodes).toBeDefined();
-    // expect(episodes.length).toBe(1);
   });
 }

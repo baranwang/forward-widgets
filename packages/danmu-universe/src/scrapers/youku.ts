@@ -135,7 +135,6 @@ export class YoukuScraper extends BaseScraper<typeof youkuIdSchema> {
       episodeId: this.generateIdString({ showId: youkuId.showId, vid: ep.id }),
       episodeTitle: ep.title,
       episodeNumber: i + 1,
-      url: ep.link,
     }));
 
     // 如果指定了目标分集，只返回该分集
@@ -192,7 +191,7 @@ export class YoukuScraper extends BaseScraper<typeof youkuIdSchema> {
     }
   }
 
-  async getComments(idString: string, segmentId: string): Promise<CommentItem[]> {
+  async getComments(idString: string, segmentId: string) {
     const { vid } = this.parseIdString(idString) ?? {};
     if (!vid) {
       return [];
@@ -291,7 +290,8 @@ export class YoukuScraper extends BaseScraper<typeof youkuIdSchema> {
       if (!result || result.length === 0) {
         return [];
       }
-      return this.formatComments(result, (comment) => {
+
+      return result.map((comment) => {
         let mode = CommentMode.SCROLL;
         let color = 16777215;
 
@@ -369,7 +369,8 @@ if (import.meta.rstest) {
 
   test("youku", async () => {
     const scraper = new YoukuScraper();
-    const episodes = await scraper.getEpisodes("eaea48e7a4c746c7b62b");
+
+    const episodes = await scraper.getEpisodes(scraper.generateIdString({ showId: "eaea48e7a4c746c7b62b" }));
     expect(episodes).toBeDefined();
     expect(episodes.length).toBeGreaterThan(0);
     console.log(episodes);

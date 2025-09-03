@@ -1,7 +1,7 @@
 import { keyBy, sortBy } from "es-toolkit";
 import { MediaType } from "../constants";
 import { getVideoPlatformInfoByDoubanId } from "../libs/douban";
-import type { BaseScraper, ProviderEpisodeInfo, ProviderSegmentInfo } from "./base";
+import type { BaseScraper, ProviderCommentItem, ProviderEpisodeInfo, ProviderSegmentInfo } from "./base";
 import { BilibiliScraper } from "./bilibili";
 import { IqiyiScraper } from "./iqiyi";
 import { TencentScraper } from "./tencent";
@@ -50,23 +50,55 @@ export class Scraper {
     return segments[idx] ?? null;
   }
 
-  async getSegmentWithTime(segmentTime = 0, ...args: { provider: string; idString: string }[]) {
-    const tasks: Promise<CommentItem[]>[] = [];
+  async getSegmentWithTime(segmentTime = 0, ...args: { provider: string; idString: string }[]): Promise<CommentItem[]> {
+    const tasks: Promise<{ comments: Array<ProviderCommentItem | null>; provider: string } | null>[] = [];
 
     for (const { provider, idString } of args) {
       tasks.push(
         (async () => {
           const segments = await this.getSegmentsByProvider(provider, idString);
-          if (!segments.length) return [];
+          if (!segments.length) return null;
           const hit = this.findSegmentAtTime(segments, segmentTime);
-          if (!hit) return [];
-          return this.scraperMap[provider]?.getComments(idString, hit.segmentId);
+          if (!hit) return null;
+          const scraper = this.scraperMap[provider];
+          if (!scraper) return null;
+          const comments = await scraper.getComments(idString, hit.segmentId);
+
+          return { comments, provider };
         })(),
       );
     }
 
     const results = await Promise.all(tasks);
-    return results.flat();
+    const contentMap = new Map<string, { item: ProviderCommentItem; count: number; provider: string }>();
+    for (const result of results) {
+      if (!result?.comments?.length) continue;
+
+      for (const comment of result.comments) {
+        if (!comment) continue;
+
+        const key = [comment.mode, comment.color, comment.content].join("___");
+        const existing = contentMap.get(key);
+        if (!existing) {
+          contentMap.set(key, { item: comment, count: 1, provider: result.provider });
+        } else {
+          if (comment.timestamp < existing.item.timestamp) {
+            existing.item = comment;
+          }
+          existing.count += 1;
+        }
+      }
+    }
+    const comments: CommentItem[] = [];
+    contentMap.forEach(({ item, count, provider }) => {
+      const content = count > 1 ? `${item.content} × ${count}` : item.content;
+      comments.push({
+        p: `${item.timestamp.toFixed(2)},${item.mode},${item.color},[${provider}]` as CommentItem["p"],
+        m: content,
+      });
+    });
+
+    return comments;
   }
 
   getDanmuWithSegmentTimeByVideoId(id: string, segmentTime: number) {
