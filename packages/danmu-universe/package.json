@@ -27,8 +27,8 @@
     "zod": "^4.0.17"
   },
   "devDependencies": {
-    "@forward-widget/libs": "^1.8.3",
-    "@forward-widget/rslib-plugin": "^1.8.3",
+    "@forward-widget/libs": "^1.8.4",
+    "@forward-widget/rslib-plugin": "^1.8.4",
     "@rslib/core": "^0.12.4",
     "@rstest/core": "^0.3.1",
     "@types/crypto-js": "^4.2.2",
