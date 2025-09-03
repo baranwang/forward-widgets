@@ -1,5 +1,11 @@
 # @forward-widget/danmu-universe
 
+## 0.0.4
+
+### Patch Changes
+
+- 132ba25: 优化 ID 取值逻辑，增强插件的稳定性
+
 ## 0.0.3
 
 ### Patch Changes
