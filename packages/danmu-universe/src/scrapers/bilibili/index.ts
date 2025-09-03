@@ -2,7 +2,7 @@ import { compact } from "es-toolkit";
 import { z } from "zod";
 import { base64ToUint8Array } from "../../libs/utils";
 import { BaseScraper, CommentMode, type ProviderEpisodeInfo } from "../base";
-import { biliproto } from "./dm.proto.js";
+import { biliproto } from "./dm.proto";
 
 const bilibiliIdSchema = z.object({
   seasonId: z.string(),
