@@ -165,7 +165,7 @@ if (import.meta.rstest) {
 
   test("bilibili", async () => {
     const scraper = new BilibiliScraper();
-    const episodes = await scraper.getEpisodes("45969");
+    const episodes = await scraper.getEpisodes(scraper.generateIdString({ seasonId: "45969" }));
     expect(episodes).toBeDefined();
     expect(episodes.length).toBeGreaterThan(0);
 
@@ -176,6 +176,9 @@ if (import.meta.rstest) {
     const comments = await scraper.getComments(episodes[0].episodeId, segments[0].segmentId);
     expect(comments).toBeDefined();
     expect(comments.length).toBeGreaterThan(0);
+    import("node:fs").then((fs) => {
+      fs.writeFileSync("bilibili.json", JSON.stringify(comments, null, 2));
+    });
     console.log("获取", comments.length, "条弹幕");
   });
 }

@@ -1,4 +1,5 @@
 import { defineConfig } from "@rstest/core";
+import { protobufjsPlugin } from "rsbuild-plugin-protobufjs";
 
 export default defineConfig({
   testEnvironment: "node",
@@ -9,4 +10,5 @@ export default defineConfig({
     type: "forks",
     execArgv: ["--env-file=.env"],
   },
+  plugins: [protobufjsPlugin()],
 });
