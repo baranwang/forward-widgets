@@ -1,5 +1,11 @@
 # @forward-widget/danmu-universe
 
+## 0.0.12
+
+### Patch Changes
+
+- 0fed184: 恢复弹幕中的 CID 字段
+
 ## 0.0.7
 
 ### Patch Changes
