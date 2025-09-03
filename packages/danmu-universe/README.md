@@ -29,6 +29,7 @@
 https://unpkg.com/@forward-widget/danmu-universe
 ```
 
+
 ## 开发
 
 欢迎社区贡献，如果你想为项目做出贡献
@@ -61,3 +62,7 @@ pnpm build
 ```bash
 pnpm test
 ```
+
+## 鸣谢
+
+- [misaka_danmu_server](https://github.com/l429609201/misaka_danmu_server)
