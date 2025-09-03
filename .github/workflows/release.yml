@@ -54,4 +54,4 @@ jobs:
 
             ${{ steps.package_list.outputs.packages }}
 
-            更新详情请查看 https://github.com/${{ github.repository }}
+            更新详情请查看 https://github.com/${{ github.repository }}/releases

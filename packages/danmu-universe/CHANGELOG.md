@@ -1,11 +1,5 @@
 # @forward-widget/danmu-universe
 
-## 0.0.11
-
-### Patch Changes
-
-- 1e82a78: test ci
-
 ## 0.0.7
 
 ### Patch Changes
