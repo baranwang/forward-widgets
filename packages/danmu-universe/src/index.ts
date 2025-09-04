@@ -27,11 +27,11 @@ if (import.meta.rstest) {
 }
 
 WidgetMetadata = {
-  id: "baranwang.danmu.universe",
+  id: process.env.NODE_ENV === "production" ? "baranwang.danmu.universe" : "baranwang.danmu.universe.test",
   title: process.env.NODE_ENV === "production" ? "通用弹幕" : "通用弹幕 (测试)",
   description: "通用弹幕插件，支持腾讯、优酷、爱奇艺、哔哩哔哩等平台",
   author: "Baran",
-  version: process.env.PACKAGE_VERSION,
+  version: process.env.NODE_ENV === "production" ? process.env.PACKAGE_VERSION : `0.0.0-${Date.now()}`,
   site: "https://github.com/baranwang/forward-widgets/tree/main/packages/danmu-universe",
   requiredVersion: "0.0.2",
   modules: [
@@ -74,7 +74,9 @@ searchDanmu = async (params) => {
   const { tmdbId, type: mediaType, episode } = params;
 
   if (!tmdbId) {
-    return null;
+    return {
+      animes: [],
+    };
   }
 
   const doubanInfo = await getDoubanInfoByTmdbId(mediaType as MediaType, tmdbId);
