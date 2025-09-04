@@ -6,6 +6,7 @@ import type { IqiyiId } from "../scrapers/iqiyi";
 import type { TencentId } from "../scrapers/tencent";
 import type { YoukuId } from "../scrapers/youku";
 import { Fetch } from "./fetch";
+import { getEpisodesByImdbId } from "./imdb";
 import { TTL_7_DAYS } from "./storage";
 import { getExternalIdsByTmdbId } from "./tmdb";
 
@@ -76,13 +77,21 @@ export const getDoubanInfoByImdbId = async (imdbId: string) => {
 /**
  * 通过 TMDB ID 获取豆瓣信息
  */
-export const getDoubanInfoByTmdbId = async (type: MediaType, tmdbId: string) => {
+export const getDoubanInfoByTmdbId = async (type: MediaType, tmdbId: string, season?: number | string) => {
   const externalIds = await getExternalIdsByTmdbId(type, tmdbId);
   console.log("Get external ids by tmdb id", externalIds);
-  if (!externalIds.imdb_id) {
+  let imdbId = externalIds.imdb_id;
+  if (!imdbId) {
     return null;
   }
-  return getDoubanInfoByImdbId(externalIds.imdb_id);
+  if (season && season !== 1) {
+    const episodes = await getEpisodesByImdbId(imdbId, { season });
+    imdbId = episodes?.episodes.find((ep) => ep.episodeNumber === 1)?.id ?? "";
+  }
+  if (!imdbId) {
+    return null;
+  }
+  return getDoubanInfoByImdbId(imdbId);
 };
 
 const doubanInfoResponseSchema = z.object({

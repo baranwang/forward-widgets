@@ -5,13 +5,14 @@
     "editor.codeActionsOnSave": {
       "source.fixAll.biome": "explicit",
       "source.organizeImports.biome": "explicit",
-      "source.sortImports.biome": "explicit",
+      "source.sortImports.biome": "explicit"
     }
   },
   "[json]": {
-    "editor.defaultFormatter": "vscode.json-language-features"
+    "editor.defaultFormatter": "biomejs.biome"
   },
   "[jsonc]": {
     "editor.defaultFormatter": "biomejs.biome"
-  }
+  },
+  "cSpell.words": ["imdb", "tmdb", "douban", "iqiyi"]
 }

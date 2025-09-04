@@ -4,7 +4,8 @@ import { z } from "zod";
 import { storage } from "./storage";
 
 type BaseRequestOptions = NonNullable<Parameters<typeof Widget.http.get>[1]>;
-interface RequestOptions<T extends z.ZodType | undefined = undefined> extends BaseRequestOptions {
+interface RequestOptions<T extends z.ZodType | undefined = undefined> extends Omit<BaseRequestOptions, "params"> {
+  params?: Record<string, any>;
   timeout?: number;
   cache?: {
     cacheKey?: string;
