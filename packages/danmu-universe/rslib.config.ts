@@ -37,5 +37,12 @@ export default defineConfig({
       },
     },
   },
+  tools: {
+    rspack: {
+      optimization: {
+        moduleIds: "deterministic",
+      },
+    },
+  },
   plugins: [protobufjsPlugin(), pluginForwardWidget()],
 });
