@@ -11,7 +11,7 @@ const episodesRequestSchema = z.object({
   pageToken: z.string().optional(),
 });
 
-export const getEpisodesByImdbId = async (
+export const getImdbEpisodes = async (
   imdbId: string,
   params?: {
     season?: number | string;
@@ -27,7 +27,7 @@ export const getEpisodesByImdbId = async (
       pageToken,
     },
     cache: {
-      cacheKey: `imdb:episodes:${imdbId}:${season}:${pageSize}:${pageToken}`,
+      cacheKey: ["imdb", "episodes", imdbId, season, pageSize, pageToken].filter(Boolean).join(":"),
     },
     successStatus: [200],
     schema: z.object({
@@ -40,6 +40,23 @@ export const getEpisodesByImdbId = async (
       ),
       totalCount: z.number(),
       nextPageToken: z.string().optional(),
+    }),
+  });
+  return response.data;
+};
+
+export const getImdbSeasons = async (imdbId: string) => {
+  const response = await fetch.get(`${BASE_URL}/titles/${imdbId}/seasons`, {
+    cache: {
+      cacheKey: ["imdb", "seasons", imdbId].join(":"),
+    },
+    schema: z.object({
+      seasons: z.array(
+        z.object({
+          season: z.string(),
+          episodeCount: z.number().optional(),
+        }),
+      ),
     }),
   });
   return response.data;

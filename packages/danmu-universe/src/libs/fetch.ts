@@ -41,6 +41,22 @@ class HttpStatusError extends Error {
   }
 }
 
+class HttpSchemaError extends Error {
+  constructor(
+    public context: RequestContext,
+    public response: HttpResponse<unknown>,
+    public error: z.ZodError,
+  ) {
+    super(`Failed to parse response with schema: ${z.prettifyError(error)}`);
+    this.name = "HttpSchemaError";
+
+    console.error(
+      `🚫 HTTP Request Failed Failed to parse response with schema: ${z.prettifyError(error)}: ${context.method} ${context.url}`,
+    );
+    console.error("Response:", { headers: response.headers, data: response.data });
+  }
+}
+
 type HttpResponse<T> = Awaited<ReturnType<typeof Widget.http.get<T>>>;
 
 export class Fetch {
@@ -165,7 +181,7 @@ export class Fetch {
       finalUrl = `${url}?${qs.stringify(params)}`;
     }
 
-    console.debug("⬆️ fetch", url, body ?? "", { ...restOptions, params });
+    console.debug("⬆️ fetch", finalUrl, body ?? "", restOptions);
     const requestPromise = isGet
       ? Widget.http.get<T>(finalUrl, restOptions)
       : Widget.http.post<T>(finalUrl, body, restOptions);
@@ -184,6 +200,14 @@ export class Fetch {
   ): Promise<HttpResponse<T>> | HttpResponse<T> => {
     if (options?.successStatus?.length && !options.successStatus.includes(response.statusCode)) {
       throw new HttpStatusError(response.statusCode, options.successStatus, context, response);
+    }
+
+    if (options?.schema) {
+      const result = (options.schema as z.ZodType).safeParse(response.data);
+      if (!result.success) {
+        throw new HttpSchemaError(context, response, result.error);
+      }
+      response.data = result.data as T;
     }
 
     const setCookieHeader = response.headers["set-cookie"] || response.headers["Set-Cookie"];
@@ -210,18 +234,6 @@ export class Fetch {
     if (options?.cache) {
       const cacheKey = this.getCacheKey(context, options);
       storage.setJson(cacheKey, response, { ttl: options.cache.ttl });
-    }
-
-    if (options?.schema) {
-      const result = (options.schema as z.ZodType).safeParse(response.data);
-      if (!result.success) {
-        console.error(context.url, `Failed to parse response with schema:`, z.prettifyError(result.error));
-        console.error("Response:", response.data);
-      }
-      return {
-        ...response,
-        data: result.data as T,
-      };
     }
     return response;
   };

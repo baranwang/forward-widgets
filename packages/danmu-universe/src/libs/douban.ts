@@ -6,7 +6,7 @@ import type { IqiyiId } from "../scrapers/iqiyi";
 import type { TencentId } from "../scrapers/tencent";
 import type { YoukuId } from "../scrapers/youku";
 import { Fetch } from "./fetch";
-import { getEpisodesByImdbId } from "./imdb";
+import { getImdbEpisodes, getImdbSeasons } from "./imdb";
 import { TTL_7_DAYS } from "./storage";
 import { getExternalIdsByTmdbId } from "./tmdb";
 
@@ -40,9 +40,21 @@ const doubanImdbResponseSchema = z.object({
 /**
  * 通过 IMDB ID 获取豆瓣信息
  */
-export const getDoubanInfoByImdbId = async (imdbId: string) => {
+export const getDoubanInfoByImdbId = async (imdbId: string, season?: number | string) => {
+  let finalImdbId = imdbId;
+  if (season && season.toString() !== "1") {
+    // tmdb 和 imdb 不分季，如果是多季的豆瓣一般会用 n 季第一集的 imdbid
+    const seasons = await getImdbSeasons(imdbId);
+    if (!seasons || parseInt(season.toString()) > seasons.seasons.length) {
+      return null;
+    }
+    const episodes = await getImdbEpisodes(imdbId, { season });
+    finalImdbId = episodes?.episodes.find((ep) => ep.episodeNumber === 1)?.id ?? "";
+  }
+  finalImdbId ||= imdbId;
+  console.log("Get douban info by imdb id", finalImdbId);
   const response = await fetch.post(
-    `https://api.douban.com/v2/movie/imdb/${imdbId}`,
+    `https://api.douban.com/v2/movie/imdb/${finalImdbId}`,
     {
       apikey: DOUBAN_API_KEY,
     },
@@ -52,7 +64,7 @@ export const getDoubanInfoByImdbId = async (imdbId: string) => {
       },
       schema: doubanImdbResponseSchema,
       cache: {
-        cacheKey: `douban:imdb:${imdbId}`,
+        cacheKey: `douban:imdb:${finalImdbId}`,
         ttl: TTL_7_DAYS,
       },
     },
@@ -80,18 +92,10 @@ export const getDoubanInfoByImdbId = async (imdbId: string) => {
 export const getDoubanInfoByTmdbId = async (type: MediaType, tmdbId: string, season?: number | string) => {
   const externalIds = await getExternalIdsByTmdbId(type, tmdbId);
   console.log("Get external ids by tmdb id", externalIds);
-  let imdbId = externalIds.imdb_id;
-  if (!imdbId) {
+  if (!externalIds.imdb_id) {
     return null;
   }
-  if (season && season !== 1) {
-    const episodes = await getEpisodesByImdbId(imdbId, { season });
-    imdbId = episodes?.episodes.find((ep) => ep.episodeNumber === 1)?.id ?? "";
-  }
-  if (!imdbId) {
-    return null;
-  }
-  return getDoubanInfoByImdbId(imdbId);
+  return getDoubanInfoByImdbId(externalIds.imdb_id, season);
 };
 
 const doubanInfoResponseSchema = z.object({
@@ -186,16 +190,18 @@ export const getVideoPlatformInfoByDoubanId = async (doubanId: string) => {
 //#region unit tests
 
 if (import.meta.rstest) {
-  const { test, expect } = import.meta.rstest;
+  const { test, describe, expect } = import.meta.rstest;
 
   test("getDoubanInfoByImdbId", async () => {
     const response = await getDoubanInfoByImdbId("tt28151918");
     expect(response).toHaveProperty("doubanId", "35651341");
   });
 
-  test("getDoubanInfoByTmdbId", async () => {
-    const response = await getDoubanInfoByTmdbId(MediaType.Movie, "980477");
-    expect(response).toHaveProperty("doubanId", "34780991");
+  describe("getDoubanInfoByTmdbId", () => {
+    test("哪吒之魔童闹海", async () => {
+      const response = await getDoubanInfoByTmdbId(MediaType.Movie, "980477");
+      expect(response).toHaveProperty("doubanId", "34780991");
+    });
   });
 
   test("getVideoPlatformInfoByDoubanId", async () => {
