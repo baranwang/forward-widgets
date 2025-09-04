@@ -1,6 +1,6 @@
 {
   "name": "@forward-widget/danmu-universe",
-  "version": "0.0.12",
+  "version": "0.0.13",
   "type": "module",
   "main": "./dist/danmu-universe.js",
   "exports": {
