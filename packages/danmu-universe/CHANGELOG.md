@@ -1,5 +1,11 @@
 # @forward-widget/danmu-universe
 
+## 0.0.14
+
+### Patch Changes
+
+- 46a8a7b: 修复多季剧集匹配错误的问题
+
 ## 0.0.13
 
 ### Patch Changes
