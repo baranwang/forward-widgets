@@ -14,7 +14,7 @@ export type IqiyiId = z.infer<typeof iqiyiIdSchema>;
 const iqiyiEpisodeTabDataVideoSchema = z
   .object({
     page_url: z.string(),
-    short_display_name: z.string(),
+    short_display_name: z.string().optional(),
     title: z.string(),
     mark_type_show: z.int().optional(),
   })
@@ -28,7 +28,16 @@ const iqiyiEpisodeTabDataVideoSchema = z
     };
   });
 
-const iqiyiEpisodeTabDataSchema = z.object({
+const safeParseVideo = (data: unknown) => {
+  const result = iqiyiEpisodeTabDataVideoSchema.safeParse(data);
+  if (!result.success) {
+    console.warn("爱奇艺: 解析分集数据时发生错误:", result.error.format(), data);
+    return null;
+  }
+  return result.data;
+};
+
+const iqiyiTvTabDataSchema = z.object({
   data: z
     .array(
       z
@@ -36,18 +45,7 @@ const iqiyiEpisodeTabDataSchema = z.object({
           videos: z
             .object({
               feature_paged: z
-                .record(
-                  z.string(),
-                  z.array(
-                    z.unknown().transform((v) => {
-                      const result = iqiyiEpisodeTabDataVideoSchema.safeParse(v);
-                      if (!result.success) {
-                        console.warn(`爱奇艺: 解析分集数据时发生错误:`, z.prettifyError(result.error), v);
-                      }
-                      return result.data;
-                    }),
-                  ),
-                )
+                .record(z.string(), z.array(z.unknown().transform((v) => safeParseVideo(v))))
                 .optional()
                 .transform((v) => compact(Object.values(v ?? {}).flat())),
             })
@@ -57,6 +55,16 @@ const iqiyiEpisodeTabDataSchema = z.object({
     )
     .transform((v) => compact(v.flat())),
 });
+
+const iqiyiMovieTabDataSchema = z.object({
+  data: z
+    .object({
+      videos: z.array(z.unknown().transform((v) => safeParseVideo(v))),
+    })
+    .transform((v) => compact(v.videos)),
+});
+
+const iqiyiEpisodeTabDataSchema = z.union([iqiyiTvTabDataSchema, iqiyiMovieTabDataSchema]);
 
 const iqiyiV3ApiResponseSchema = z.object({
   status_code: z.number(),
@@ -274,14 +282,18 @@ export class IqiyiScraper extends BaseScraper<typeof iqiyiIdSchema> {
         })) ?? [];
 
       if (!episodes.length) {
-        const tabData = result?.data?.template?.tabs
-          ?.find((tab) =>
-            tab.blocks.some((block) => block.bk_id === "selector_bk" && block.bk_type === "album_episodes"),
-          )
-          ?.blocks?.find((block) => block.bk_id === "selector_bk" && block.bk_type === "album_episodes")?.data;
-        const { success, data, error } = iqiyiEpisodeTabDataSchema.safeParse(tabData);
+        const tab = result?.data?.template?.tabs
+          ?.flatMap((tab) => tab.blocks || [])
+          .find((block) => {
+            return (
+              (block.bk_id === "selector_bk" && block.bk_type === "album_episodes") ||
+              (block.bk_id === "film_feature_bk" && block.bk_type === "video_list")
+            );
+          });
+
+        const { success, data, error } = iqiyiEpisodeTabDataSchema.safeParse(tab?.data);
         if (!success) {
-          console.warn(`爱奇艺: 解析分集数据时发生错误:`, z.prettifyError(error), tabData);
+          console.warn(`爱奇艺: 解析分集数据时发生错误:`, z.prettifyError(error), tab);
           return [];
         }
         const blacklistPattern = this.getEpisodeBlacklistPattern();
@@ -304,7 +316,9 @@ export class IqiyiScraper extends BaseScraper<typeof iqiyiIdSchema> {
             provider: this.providerName,
             episodeId: this.generateIdString({ entityId }),
             episodeTitle: ep.title,
-            episodeNumber: this.getEpisodeIndexFromTitle(ep.short_display_name) ?? episodeIndex,
+            episodeNumber: ep.short_display_name
+              ? (this.getEpisodeIndexFromTitle(ep.short_display_name) ?? episodeIndex)
+              : episodeIndex,
           });
           episodeIndex += 1;
         }
@@ -379,7 +393,7 @@ if (import.meta.rstest) {
   test("iqiyi", async () => {
     const scraper = new IqiyiScraper();
 
-    const episodes = await scraper.getEpisodes(scraper.generateIdString({ entityId: "5298806780347900" }));
+    const episodes = await scraper.getEpisodes(scraper.generateIdString({ entityId: "1429158730765200" }));
     expect(episodes).toBeDefined();
     expect(episodes.length).toBeGreaterThan(0);
 
