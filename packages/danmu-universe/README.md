@@ -65,6 +65,8 @@ pnpm build
 
 ### 测试
 
+本地测试需要用到 TMDB 的 API，参考  `.env.example` 创建 `.env` 文件，令牌需要到 [TMDB](https://www.themoviedb.org/settings/api) 获取
+
 ```bash
 pnpm test
 ```
