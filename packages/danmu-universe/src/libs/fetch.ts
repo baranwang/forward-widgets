@@ -246,3 +246,5 @@ export class Fetch {
     return cacheKey;
   }
 }
+
+export const fetch = new Fetch();
