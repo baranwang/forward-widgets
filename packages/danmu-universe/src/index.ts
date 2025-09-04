@@ -79,19 +79,18 @@ WidgetMetadata = {
 const scraper = new Scraper();
 
 searchDanmu = async (params) => {
-  storage.cleanup();
-
   const { tmdbId, type: mediaType, season, episode } = params;
 
   if (!tmdbId) {
-    return {
-      animes: [],
-    };
+    return null;
   }
 
   const doubanInfo = await getDoubanInfoByTmdbId(mediaType as MediaType, tmdbId, season);
+  if (!doubanInfo?.doubanId) {
+    return null;
+  }
 
-  const episodes = await scraper.getDetailWithDoubanId(doubanInfo?.doubanId ?? "", mediaType as MediaType, episode);
+  const episodes = await scraper.getDetailWithDoubanId(doubanInfo.doubanId, mediaType as MediaType, episode);
 
   return {
     animes: episodes.map((item) => {

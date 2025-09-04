@@ -1,3 +1,4 @@
+import { compact } from "es-toolkit";
 import { qs } from "url-parse";
 import { z } from "zod";
 import { TTL_2_HOURS } from "../libs/storage";
@@ -15,7 +16,7 @@ const tencentEpisodeSchema = z.object({
   vid: z.string().refine((val) => !!val),
   is_trailer: z.string().refine((val) => val !== "1"),
   title: z.string().refine((val) => {
-    const junkKeywords = ["预告", "彩蛋", "直拍", "直播回顾", "加更", "走心", "解忧", "纯享", "节点"];
+    const junkKeywords = ["预告", "彩蛋", "直拍", "直播回顾", "加更", "走心", "解忧", "纯享", "节点", "采访", "花絮"];
     for (const keyword of junkKeywords) {
       if (val.includes(keyword)) {
         return false;
@@ -39,11 +40,15 @@ const tencentEpisodeResultSchema = z
           module_datas: z.array(
             z.object({
               item_data_lists: z.object({
-                item_datas: z.array(
-                  z.object({
-                    item_params: z.unknown(),
-                  }),
-                ),
+                item_datas: z
+                  .array(
+                    z
+                      .object({
+                        item_params: z.unknown().transform((v) => tencentEpisodeSchema.safeParse(v).data ?? null),
+                      })
+                      .transform((v) => v.item_params ?? null),
+                  )
+                  .transform((v) => compact(v)),
               }),
             }),
           ),
@@ -186,6 +191,7 @@ export class TencentScraper extends BaseScraper<typeof tencentIdSchema> {
       return [];
     }
     const rawComments = await this.internalGetComments(tencentId.vid, segmentId);
+    console.log("找到", rawComments.length, "条弹幕");
 
     if (!rawComments || rawComments.length === 0) {
       return [];
@@ -270,12 +276,7 @@ export class TencentScraper extends BaseScraper<typeof tencentIdSchema> {
         } else {
           pageContext = "";
         }
-        for (const item of itemDatas) {
-          const { success, data } = tencentEpisodeSchema.safeParse(item.item_params);
-          if (success) {
-            results.push(data);
-          }
-        }
+        results.push(...itemDatas);
         if (!pageContext) {
           break;
         }

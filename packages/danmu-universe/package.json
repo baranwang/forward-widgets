@@ -24,7 +24,7 @@
     "p-limit": "^6.2.0",
     "protobufjs": "^7.5.4",
     "url-parse": "^1.5.10",
-    "zod": "^4.1.5"
+    "zod": "4.0.17"
   },
   "devDependencies": {
     "@forward-widget/libs": "^1.8.4",

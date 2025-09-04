@@ -18,10 +18,7 @@ const youkuEpisodeInfoSchema = z
     id: z.string(),
     show_id: z.string().optional(),
     title: z.string(),
-    seq: z
-      .string()
-      .transform((v) => parseInt(v))
-      .optional(),
+    seq: z.coerce.number().optional(),
     duration: z.string(),
     category: z.string(),
     link: z.string(),

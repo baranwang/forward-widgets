@@ -201,11 +201,12 @@ export class Fetch {
     if (options?.successStatus?.length && !options.successStatus.includes(response.statusCode)) {
       throw new HttpStatusError(response.statusCode, options.successStatus, context, response);
     }
+    const originalResponse = { ...response };
 
     if (options?.schema) {
       const result = (options.schema as z.ZodType).safeParse(response.data);
       if (!result.success) {
-        throw new HttpSchemaError(context, response, result.error);
+        throw new HttpSchemaError(context, originalResponse, result.error);
       }
       response.data = result.data as T;
     }
@@ -233,7 +234,7 @@ export class Fetch {
 
     if (options?.cache) {
       const cacheKey = this.getCacheKey(context, options);
-      storage.setJson(cacheKey, response, { ttl: options.cache.ttl });
+      storage.setJson(cacheKey, originalResponse, { ttl: options.cache.ttl });
     }
     return response;
   };
