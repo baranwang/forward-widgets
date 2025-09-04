@@ -28,7 +28,7 @@ export default defineConfig({
       jsOptions: {
         minimizerOptions: {
           mangle: true,
-          minify: true,
+          minify: false,
           compress: true,
           format: {
             comments: false,
