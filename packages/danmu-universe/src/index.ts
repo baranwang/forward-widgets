@@ -26,7 +26,7 @@ if (import.meta.rstest) {
   });
 }
 
-const getVersion = () => {
+const widgetVersion = (() => {
   if (process.env.NODE_ENV === "production") {
     return process.env.PACKAGE_VERSION;
   }
@@ -34,14 +34,14 @@ const getVersion = () => {
   return `0.0.0-${[date.getFullYear(), date.getMonth() + 1, date.getDate(), date.getHours(), date.getMinutes()]
     .map((item) => item.toString().padStart(2, "0"))
     .join("")}`;
-};
+})();
 
 WidgetMetadata = {
   id: process.env.NODE_ENV === "production" ? "baranwang.danmu.universe" : "baranwang.danmu.universe.test",
   title: process.env.NODE_ENV === "production" ? "通用弹幕" : "通用弹幕 (测试)",
   description: "通用弹幕插件，支持腾讯、优酷、爱奇艺、哔哩哔哩等平台",
   author: "Baran",
-  version: getVersion(),
+  version: widgetVersion,
   site: "https://github.com/baranwang/forward-widgets/tree/main/packages/danmu-universe",
   requiredVersion: "0.0.2",
   modules: [
