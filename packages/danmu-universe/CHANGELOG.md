@@ -1,5 +1,11 @@
 # @forward-widget/danmu-universe
 
+## 0.0.13
+
+### Patch Changes
+
+- 2177622: 修复爱艺奇电影数据加载失败的问题
+
 ## 0.0.12
 
 ### Patch Changes
