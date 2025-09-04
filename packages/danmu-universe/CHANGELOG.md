@@ -1,5 +1,11 @@
 # @forward-widget/danmu-universe
 
+## 0.0.16
+
+### Patch Changes
+
+- 51e4790: 修复弹幕加载失败的问题
+
 ## 0.0.15
 
 ### Patch Changes
