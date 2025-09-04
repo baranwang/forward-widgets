@@ -1,5 +1,11 @@
 # @forward-widget/danmu-universe
 
+## 0.0.15
+
+### Patch Changes
+
+- 26025cc: 修复剧集 IMDB 识别错误的问题
+
 ## 0.0.14
 
 ### Patch Changes
