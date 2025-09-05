@@ -31,40 +31,52 @@ const iqiyiEpisodeTabDataVideoSchema = z
 const safeParseVideo = (data: unknown) => {
   const result = iqiyiEpisodeTabDataVideoSchema.safeParse(data);
   if (!result.success) {
-    console.warn("爱奇艺: 解析分集数据时发生错误:", result.error.format(), data);
+    console.warn("爱奇艺: 解析分集数据时发生错误:", z.prettifyError(result.error), data);
     return null;
   }
   return result.data;
 };
 
-const iqiyiTvTabDataSchema = z.object({
-  data: z
-    .array(
-      z
-        .object({
-          videos: z
-            .object({
-              feature_paged: z
-                .record(z.string(), z.array(z.unknown().transform((v) => safeParseVideo(v))))
-                .optional()
-                .transform((v) => compact(Object.values(v ?? {}).flat())),
-            })
-            .optional(),
-        })
-        .transform((v) => v.videos?.feature_paged),
-    )
-    .transform((v) => compact(v.flat())),
+const iqiyiTvTabSchema = z.object({
+  bk_id: z.literal("selector_bk"),
+  bk_type: z.literal("album_episodes"),
+  data: z.object({
+    data: z
+      .array(
+        z.unknown().transform(
+          (v) =>
+            z
+              .object({
+                videos: z
+                  .object({
+                    feature_paged: z
+                      .record(z.any(), z.array(z.unknown().transform((v) => safeParseVideo(v))))
+                      .optional()
+                      .transform((v) => compact(Object.values(v ?? {}).flat())),
+                  })
+                  .optional(),
+              })
+              .transform((v) => v.videos?.feature_paged)
+              .safeParse(v).data,
+        ),
+      )
+      .transform((v) => compact(v.flat())),
+  }),
 });
 
-const iqiyiMovieTabDataSchema = z.object({
-  data: z
-    .object({
-      videos: z.array(z.unknown().transform((v) => safeParseVideo(v))),
-    })
-    .transform((v) => compact(v.videos)),
+const iqiyiMovieTabSchema = z.object({
+  bk_id: z.literal("film_feature_bk"),
+  bk_type: z.literal("video_list"),
+  data: z.object({
+    data: z
+      .object({
+        videos: z.array(z.unknown().transform((v) => safeParseVideo(v))),
+      })
+      .transform((v) => compact(v.videos)),
+  }),
 });
 
-const iqiyiEpisodeTabDataSchema = z.union([iqiyiTvTabDataSchema, iqiyiMovieTabDataSchema]);
+const iqiyiEpisodeTabSchema = z.union([iqiyiTvTabSchema, iqiyiMovieTabSchema]).transform((v) => v.data.data);
 
 const iqiyiV3ApiResponseSchema = z.object({
   status_code: z.number(),
@@ -283,22 +295,17 @@ export class IqiyiScraper extends BaseScraper<typeof iqiyiIdSchema> {
 
       if (!episodes.length) {
         const tab = result?.data?.template?.tabs
-          ?.flatMap((tab) => tab.blocks || [])
-          .find((block) => {
-            return (
-              (block.bk_id === "selector_bk" && block.bk_type === "album_episodes") ||
-              (block.bk_id === "film_feature_bk" && block.bk_type === "video_list")
-            );
-          });
+          ?.flatMap((item) => item.blocks || [])
+          .find((block) => iqiyiEpisodeTabSchema.safeParse(block).success);
 
-        const { success, data, error } = iqiyiEpisodeTabDataSchema.safeParse(tab?.data);
+        const { success, data, error } = iqiyiEpisodeTabSchema.safeParse(tab);
         if (!success) {
-          console.warn(`爱奇艺: 解析分集数据时发生错误:`, z.prettifyError(error), tab);
+          console.warn(`爱奇艺: 解析分集列表数据时发生错误:`, z.prettifyError(error), tab);
           return [];
         }
         const blacklistPattern = this.getEpisodeBlacklistPattern();
         let episodeIndex = 1;
-        for (const ep of data.data) {
+        for (const ep of data) {
           /**
            * 17: 预告
            */
@@ -393,7 +400,7 @@ if (import.meta.rstest) {
   test("iqiyi", async () => {
     const scraper = new IqiyiScraper();
 
-    const episodes = await scraper.getEpisodes(scraper.generateIdString({ entityId: "1429158730765200" }));
+    const episodes = await scraper.getEpisodes(scraper.generateIdString({ entityId: "10923301700" }));
     expect(episodes).toBeDefined();
     expect(episodes.length).toBeGreaterThan(0);
 
