@@ -65,6 +65,8 @@ export abstract class BaseScraper<IDType extends z.ZodType = any> {
     return encodeURIComponent(JSON.stringify(id));
   }
 
+  protected search?(params: SearchDanmuParams): Promise<ProviderEpisodeInfo[]>;
+
   abstract getEpisodes(idString: string, episodeIndex?: number): Promise<ProviderEpisodeInfo[]>;
 
   abstract getSegments(idString: string): Promise<ProviderSegmentInfo[]>;
