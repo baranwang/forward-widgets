@@ -1,5 +1,11 @@
 # @forward-widget/danmu-universe
 
+## 0.1.0
+
+### Minor Changes
+
+- 5dd0e5b: 增加模糊匹配功能，优化豆瓣信息搜索逻辑
+
 ## 0.0.16
 
 ### Patch Changes
