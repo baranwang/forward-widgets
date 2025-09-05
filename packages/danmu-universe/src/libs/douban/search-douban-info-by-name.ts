@@ -5,7 +5,7 @@ import { fetch } from "../fetch";
 const doubanSubjectItemSchema = z.object({
   type_name: z.string(),
   target_type: z.string(),
-  target_id: z.coerce.number(),
+  target_id: z.string(),
   target: z.object({
     title: z.string(),
     has_linewatch: z.boolean().refine((val) => val), // 不能播放的取出来也没意义
@@ -20,10 +20,9 @@ const doubanSearchResponseSchema = z.object({
   }),
 });
 
-export const searchDoubanInfoByName = async (name: string, season?: number | string) => {
-  let keywords = name;
-  if (season && parseInt(season.toString()) > 1) {
-    keywords += season.toString();
+export const searchDoubanInfoByName = async (keywords?: string) => {
+  if (!keywords) {
+    return [];
   }
   const response = await fetch.get(`https://api.douban.com/v2/movie/search`, {
     params: {
@@ -38,7 +37,7 @@ export const searchDoubanInfoByName = async (name: string, season?: number | str
     },
     schema: doubanSearchResponseSchema,
     cache: {
-      cacheKey: ["douban", "search", name, season].filter(Boolean).join(":"),
+      cacheKey: ["douban", "search", keywords].filter(Boolean).join(":"),
     },
   });
   return response.data?.subjects.items ?? [];

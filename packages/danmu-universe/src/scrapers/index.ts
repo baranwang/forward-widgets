@@ -1,4 +1,4 @@
-import { keyBy, sortBy } from "es-toolkit";
+import { isEqual, keyBy, sortBy, uniqWith } from "es-toolkit";
 import { MediaType } from "../constants";
 import { getVideoPlatformInfoByDoubanId } from "../libs/douban";
 import type { BaseScraper, ProviderCommentItem, ProviderEpisodeInfo, ProviderSegmentInfo } from "./base";
@@ -150,13 +150,22 @@ export class Scraper {
     return await this.getEpisodes({ provider, idString, episodeNumber: this.getEpisodeNumber(mediaType, episode) });
   }
 
-  async getDetailWithDoubanId(doubanId: string, mediaType: MediaType, episode?: string) {
-    const response = await getVideoPlatformInfoByDoubanId(doubanId.toString());
+  async getDetailWithDoubanIds(doubanIds: string[], mediaType: MediaType, episode?: string) {
+    const responses = await Promise.all(doubanIds.map((id) => getVideoPlatformInfoByDoubanId(id).catch(() => null)));
     const episodeNumber = this.getEpisodeNumber(mediaType, episode);
     const options: Parameters<typeof this.getEpisodes> = [];
-    Object.entries(response.providers).forEach(([provider, item]) => {
-      options.push({ provider, idString: this.scraperMap[provider]?.generateIdString(item) ?? "", episodeNumber });
-    });
-    return this.getEpisodes(...options);
+
+    for (const response of responses) {
+      if (!response) continue;
+      Object.entries(response.providers).forEach(([provider, item]) => {
+        options.push({
+          provider,
+          idString: this.scraperMap[provider]?.generateIdString(item) ?? "",
+          episodeNumber,
+        });
+      });
+    }
+
+    return this.getEpisodes(...uniqWith(options, isEqual));
   }
 }

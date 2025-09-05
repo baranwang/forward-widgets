@@ -1,5 +1,5 @@
 import { type MediaType, PROVIDER_NAMES } from "./constants";
-import { getDoubanInfoByTmdbId } from "./libs/douban";
+import { getDoubanIds } from "./libs/douban";
 import { storage } from "./libs/storage";
 import { Scraper } from "./scrapers";
 
@@ -79,18 +79,19 @@ WidgetMetadata = {
 const scraper = new Scraper();
 
 searchDanmu = async (params) => {
-  const { tmdbId, type: mediaType, season, episode } = params;
+  storage.cleanup();
+
+  const { tmdbId, type: mediaType, episode } = params;
 
   if (!tmdbId) {
     return null;
   }
-
-  const doubanInfo = await getDoubanInfoByTmdbId(mediaType as MediaType, tmdbId, season);
-  if (!doubanInfo?.doubanId) {
+  const doubanIds = await getDoubanIds(params);
+  if (!doubanIds.length) {
     return null;
   }
 
-  const episodes = await scraper.getDetailWithDoubanId(doubanInfo.doubanId, mediaType as MediaType, episode);
+  const episodes = await scraper.getDetailWithDoubanIds(doubanIds, mediaType as MediaType, episode);
 
   return {
     animes: episodes.map((item) => {
@@ -107,15 +108,18 @@ searchDanmu = async (params) => {
 };
 
 getDetail = async (params) => {
-  const { animeId, tmdbId, type: mediaType, season, episode } = params;
+  const { animeId, tmdbId, type: mediaType, episode } = params;
   if (!tmdbId && !animeId) {
     return null;
   }
   if (animeId) {
     return scraper.getDetailWithAnimeId(animeId.toString(), mediaType as MediaType, episode);
   }
-  const doubanInfo = await getDoubanInfoByTmdbId(mediaType as MediaType, tmdbId ?? "", season);
-  return scraper.getDetailWithDoubanId(doubanInfo?.doubanId ?? "", mediaType as MediaType, episode);
+  const doubanIds = await getDoubanIds(params);
+  if (!doubanIds.length) {
+    return null;
+  }
+  return scraper.getDetailWithDoubanIds(doubanIds, mediaType as MediaType, episode);
 };
 
 getComments = async (params) => {
@@ -125,8 +129,11 @@ getComments = async (params) => {
     if (!tmdbId) {
       return null;
     }
-    const doubanInfo = await getDoubanInfoByTmdbId(mediaType as MediaType, tmdbId, season);
-    const episodes = await scraper.getDetailWithDoubanId(doubanInfo?.doubanId ?? "", mediaType as MediaType, episode);
+    const doubanIds = await getDoubanIds(params);
+    if (!doubanIds.length) {
+      return null;
+    }
+    const episodes = await scraper.getDetailWithDoubanIds(doubanIds, mediaType as MediaType, episode);
     videoId = episodes.map((item) => [item.provider, item.episodeId].join(":")).join(",");
   }
   const comments = await scraper.getDanmuWithSegmentTimeByVideoId(videoId.toString(), segmentTime);
