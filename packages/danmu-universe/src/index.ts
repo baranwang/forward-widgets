@@ -44,6 +44,29 @@ WidgetMetadata = {
   version: widgetVersion,
   site: "https://github.com/baranwang/forward-widgets/tree/main/packages/danmu-universe",
   requiredVersion: "0.0.2",
+  globalParams: [
+    {
+      title: "模糊匹配",
+      name: "fuzzyMatch",
+      description: "是否开启模糊匹配",
+      value: "auto",
+      type: "enumeration",
+      enumOptions: [
+        {
+          title: "自动",
+          value: "auto",
+        },
+        {
+          title: "始终开启",
+          value: "always",
+        },
+        {
+          title: "始终关闭",
+          value: "never",
+        },
+      ],
+    },
+  ],
   modules: [
     {
       type: "danmu",
@@ -123,7 +146,7 @@ getDetail = async (params) => {
 };
 
 getComments = async (params) => {
-  const { animeId, commentId, segmentTime, tmdbId, type: mediaType, season, episode } = params;
+  const { animeId, commentId, segmentTime, tmdbId, type: mediaType, episode } = params;
   let videoId = commentId ?? animeId;
   if (!videoId) {
     if (!tmdbId) {

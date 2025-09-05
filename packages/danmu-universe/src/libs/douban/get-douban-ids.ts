@@ -11,25 +11,36 @@ const getDoubanInfoParamsSchema = z.object({
   seriesName: z.coerce.string().optional(),
   season: z.coerce.number().optional(),
   episode: z.coerce.number().optional(),
+
+  fuzzyMatch: z.enum(["always", "never", "auto"]).catch("auto").optional().default("auto"),
 });
 
 export const getDoubanIds = async (params: SearchDanmuParams) => {
   const doubanIds = new Set<string>();
-  const { tmdbId, type, seriesName, season } = getDoubanInfoParamsSchema.parse(params);
-  const doubanInfo = await getDoubanInfoByTmdbId(type, tmdbId, season);
-  if (doubanInfo?.doubanId) {
-    doubanIds.add(doubanInfo.doubanId);
+  const { tmdbId, type, seriesName, season, fuzzyMatch } = getDoubanInfoParamsSchema.parse(params);
+  try {
+    const doubanInfo = await getDoubanInfoByTmdbId(type, tmdbId, season);
+    if (doubanInfo?.doubanId) {
+      doubanIds.add(doubanInfo.doubanId);
+    }
+  } catch (error) {
+    console.error("Error getting douban info by tmdb id", error);
   }
 
-  // 搜索豆瓣信息
-  // TODO： 增加开关配置，如果已经找到了 doubanId 还是否需要搜索豆瓣信息
-  let keywords = seriesName;
-  if (season && parseInt(season.toString()) > 1) {
-    keywords += season.toString();
-  }
-  const subjects = await searchDoubanInfoByName(keywords);
-  for (const subject of subjects) {
-    doubanIds.add(subject.target_id);
+  if (fuzzyMatch === "always" || (fuzzyMatch === "auto" && !doubanIds.size)) {
+    try {
+      // 搜索豆瓣信息
+      let keywords = seriesName;
+      if (season && parseInt(season.toString()) > 1) {
+        keywords += season.toString();
+      }
+      const subjects = await searchDoubanInfoByName(keywords);
+      for (const subject of subjects) {
+        doubanIds.add(subject.target_id);
+      }
+    } catch (error) {
+      console.error("Error searching douban info by name", error);
+    }
   }
   return Array.from(doubanIds);
 };

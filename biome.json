@@ -16,6 +16,7 @@
   },
   "linter": {
     "enabled": true,
+    "includes": ["**/src/**", "!**/forward-widget-env.d.ts"],
     "rules": {
       "recommended": true
     }

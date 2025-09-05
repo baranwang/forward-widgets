@@ -24,7 +24,7 @@ export const searchDoubanInfoByName = async (keywords?: string) => {
   if (!keywords) {
     return [];
   }
-  const response = await fetch.get(`https://api.douban.com/v2/movie/search`, {
+  const response = await fetch.get("https://m.douban.com/rexxar/api/v2/search", {
     params: {
       q: keywords,
       start: 0,
@@ -42,3 +42,13 @@ export const searchDoubanInfoByName = async (keywords?: string) => {
   });
   return response.data?.subjects.items ?? [];
 };
+
+if (import.meta.rstest) {
+  const { test, expect } = import.meta.rstest;
+
+  test("searchDoubanInfoByName", async () => {
+    const subjects = await searchDoubanInfoByName("庆余年");
+    expect(subjects).toBeDefined();
+    expect(subjects.length).toBeGreaterThan(0);
+  });
+}
