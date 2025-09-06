@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { DEFAULT_COLOR_INT } from "../libs/constants";
 import { Fetch } from "../libs/fetch";
 import { safeJsonParse } from "../libs/utils";
 
@@ -41,18 +42,20 @@ export enum CommentMode {
   TOP = 5,
 }
 
-export interface ProviderCommentItem {
+export const providerCommentItemSchema = z.object({
   /** 弹幕ID */
-  id: string;
+  id: z.coerce.string().optional(),
   /** 弹幕时间戳(秒) */
-  timestamp: number;
+  timestamp: z.coerce.number(),
   /** 弹幕模式 */
-  mode: CommentMode;
+  mode: z.enum(CommentMode).catch(CommentMode.SCROLL).optional().default(CommentMode.SCROLL),
   /** 弹幕颜色 */
-  color: number;
+  color: z.number().catch(DEFAULT_COLOR_INT).optional().default(DEFAULT_COLOR_INT),
   /** 弹幕内容 */
-  content: string;
-}
+  content: z.string(),
+});
+
+export type ProviderCommentItem = z.infer<typeof providerCommentItemSchema>;
 
 export abstract class BaseScraper<IDType extends z.ZodType = any> {
   abstract providerName: string;

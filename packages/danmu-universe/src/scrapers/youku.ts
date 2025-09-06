@@ -3,8 +3,9 @@ import Utf8 from "crypto-js/enc-utf8";
 import MD5 from "crypto-js/md5";
 import { qs } from "url-parse";
 import { z } from "zod";
+import { DEFAULT_COLOR_INT } from "../libs/constants";
 import { safeJsonParseWithZod } from "../libs/utils";
-import { BaseScraper, CommentMode, type ProviderEpisodeInfo } from "./base";
+import { BaseScraper, CommentMode, type ProviderEpisodeInfo, providerCommentItemSchema } from "./base";
 
 const youkuIdSchema = z.object({
   showId: z.string().optional(),
@@ -42,22 +43,43 @@ const youkuVideoResultSchema = z.object({
   videos: z.array(youkuEpisodeInfoSchema),
 });
 
-const youkuCommentPropertySchema = z.object({
-  color: z.number().optional(),
-  pos: z.number().optional(),
-  size: z.number().optional(),
-});
-
-const youkuCommentSchema = z.object({
-  id: z.number(),
-  content: z.string(),
-  playat: z.number(), // milliseconds
-  propertis: z
-    .string()
-    .transform((v) => safeJsonParseWithZod(v, youkuCommentPropertySchema))
-    .optional(),
-  uid: z.string(),
-});
+const youkuCommentSchema = z
+  .object({
+    id: z.number(),
+    content: z.string(),
+    playat: z.number().transform((v) => v / 1000), // milliseconds
+    propertis: z
+      .string()
+      .nullish()
+      .transform((v) =>
+        safeJsonParseWithZod(
+          v ?? "{}",
+          z.object({
+            color: z.number().optional().default(DEFAULT_COLOR_INT),
+            pos: z
+              .number()
+              .optional()
+              .transform((v) => {
+                let mode = CommentMode.SCROLL;
+                if (v === 1) mode = CommentMode.TOP;
+                else if (v === 2) mode = CommentMode.BOTTOM;
+                return mode;
+              }),
+          }),
+        ),
+      ),
+  })
+  .transform((v) => {
+    return (
+      providerCommentItemSchema.safeParse({
+        id: v.id.toString(),
+        timestamp: v.playat,
+        mode: v.propertis?.pos,
+        color: v.propertis?.color,
+        content: v.content,
+      }).data ?? null
+    );
+  });
 
 const youkuDanmuResultSchema = z.object({
   data: z.object({
@@ -314,35 +336,7 @@ export class YoukuScraper extends BaseScraper<typeof youkuIdSchema> {
       const result = response.data?.data.result?.data.result ?? [];
       this.logger.info("获取到分段", mat, "的弹幕", result.length, "条");
 
-      if (!result || result.length === 0) {
-        return [];
-      }
-
-      return result.map((comment) => {
-        let mode = CommentMode.SCROLL;
-        let color = 16777215;
-
-        try {
-          const props = comment.propertis;
-
-          if (props) {
-            if (props.color) color = props.color;
-            if (props.pos === 1) mode = CommentMode.TOP;
-            else if (props.pos === 2) mode = CommentMode.BOTTOM;
-          }
-        } catch {
-          // 使用默认值
-        }
-
-        const timestamp = comment.playat / 1000.0;
-        return {
-          id: comment.id.toString(),
-          timestamp,
-          mode,
-          color,
-          content: comment.content,
-        };
-      });
+      return result;
     } catch (error) {
       this.logger.error("解析弹幕响应失败，vid：", vid, "mat：", mat, "错误：", error);
       return [];

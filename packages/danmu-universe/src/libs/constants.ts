@@ -5,6 +5,9 @@ export enum MediaType {
   TV = "tv",
 }
 
+export const DEFAULT_COLOR_HEX = "ffffff";
+export const DEFAULT_COLOR_INT = parseInt(DEFAULT_COLOR_HEX, 16);
+
 export const PROVIDER_NAMES: Record<string, string> = {
   tencent: "腾讯视频",
   iqiyi: "爱奇艺",

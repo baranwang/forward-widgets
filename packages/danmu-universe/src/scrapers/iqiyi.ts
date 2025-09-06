@@ -2,7 +2,8 @@ import MD5 from "crypto-js/md5";
 import { compact } from "es-toolkit";
 import { XMLParser } from "fast-xml-parser";
 import { z } from "zod";
-import { BaseScraper, CommentMode, type ProviderEpisodeInfo } from "./base";
+import { DEFAULT_COLOR_HEX } from "../libs/constants";
+import { BaseScraper, type ProviderEpisodeInfo, providerCommentItemSchema } from "./base";
 
 const iqiyiIdSchema = z.object({
   /** entity_id / tv_id */
@@ -122,18 +123,35 @@ const iqiyiVideoBaseInfoResponseSchema = z.object({
   }),
 });
 
-const iqiyiBulletInfoSchema = z.object({
-  contentId: z.string(),
-  content: z.string(),
-  showTime: z.number(),
-  color: z.string().optional().default("FFFFFF"),
-});
-
 const iqiyiCommentsEntrySchema = z.object({
   int: z.number(),
   list: z.object({
     bulletInfo: z
-      .array(z.unknown().transform((v) => iqiyiBulletInfoSchema.safeParse(v).data))
+      .array(
+        z.unknown().transform(
+          (v) =>
+            z
+              .object({
+                contentId: z.string(),
+                content: z.string(),
+                showTime: z.number(),
+                color: z
+                  .string()
+                  .optional()
+                  .default(DEFAULT_COLOR_HEX)
+                  .transform((v) => parseInt(v, 16)),
+              })
+              .transform((v) => {
+                return providerCommentItemSchema.safeParse({
+                  id: v.contentId.toString(),
+                  timestamp: v.showTime,
+                  color: v.color,
+                  content: v.content,
+                }).data;
+              })
+              .safeParse(v).data,
+        ),
+      )
       .transform((v) => compact(v)),
   }),
 });
@@ -154,7 +172,9 @@ const iqiyiCommentsResponseSchema = z
 export class IqiyiScraper extends BaseScraper<typeof iqiyiIdSchema> {
   providerName = "iqiyi";
 
-  private readonly xmlParser = new XMLParser();
+  private readonly xmlParser = new XMLParser({
+    htmlEntities: true,
+  });
 
   protected idSchema = iqiyiIdSchema;
 
@@ -238,21 +258,7 @@ export class IqiyiScraper extends BaseScraper<typeof iqiyiIdSchema> {
       return [];
     }
 
-    return data.map((comment) => {
-      let color = 16777215;
-      try {
-        color = parseInt(comment.color, 16);
-      } catch (error) {
-        this.logger.debug("转换颜色失败，color：", comment.color, "错误：", error);
-      }
-      return {
-        id: comment.contentId.toString(),
-        timestamp: comment.showTime,
-        mode: CommentMode.SCROLL,
-        color,
-        content: comment.content,
-      };
-    });
+    return data;
   }
 
   private async getEpisodesV3(entityId: string) {

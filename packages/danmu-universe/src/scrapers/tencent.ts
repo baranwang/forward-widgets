@@ -1,9 +1,10 @@
 import { compact } from "es-toolkit";
 import { qs } from "url-parse";
 import { z } from "zod";
+import { DEFAULT_COLOR_HEX, DEFAULT_COLOR_INT } from "../libs/constants";
 import { TTL_2_HOURS } from "../libs/storage";
 import { safeJsonParseWithZod } from "../libs/utils";
-import { BaseScraper, CommentMode, type ProviderEpisodeInfo } from "./base";
+import { BaseScraper, CommentMode, type ProviderEpisodeInfo, providerCommentItemSchema } from "./base";
 
 const tencentIdSchema = z.object({
   cid: z.string(),
@@ -67,20 +68,58 @@ const tencentSegmentIndexSchema = z.object({
   ),
 });
 
-const tencentContentStyleSchema = z.object({
-  color: z.string().optional(),
-  position: z.number().optional(),
-});
-
-const tencentCommentItemSchema = z.object({
-  id: z.string(),
-  content: z.string(),
-  time_offset: z.string(),
-  content_style: z
-    .string()
-    .optional()
-    .transform((v) => safeJsonParseWithZod(v ?? "", tencentContentStyleSchema)),
-});
+const tencentCommentItemSchema = z
+  .object({
+    id: z.string(),
+    content: z.string(),
+    time_offset: z.coerce.number().transform((v) => v / 1000),
+    content_style: z
+      .string()
+      .nullish()
+      .transform((v) => {
+        return safeJsonParseWithZod(
+          v ?? "{}",
+          z
+            .object({
+              color: z.string().optional().default(DEFAULT_COLOR_HEX),
+              position: z.number().optional().default(1),
+              gradient_colors: z.array(z.string()).optional(),
+            })
+            .transform((v) => {
+              // -- 模式计算 --
+              let mode = CommentMode.SCROLL;
+              if (v.position === 2) {
+                mode = CommentMode.TOP;
+              } else if (v.position === 3) {
+                mode = CommentMode.BOTTOM;
+              }
+              // -- 颜色计算 --
+              // 优先使用 color 字段，如果没有则为默认白色
+              let finalColor = v.color ? parseInt(v.color, 16) : DEFAULT_COLOR_INT;
+              if (finalColor === DEFAULT_COLOR_INT && v.gradient_colors?.length) {
+                // 如果颜色是白色，且有渐变色，则使用渐变色，计算一个平均色
+                finalColor =
+                  v.gradient_colors.reduce((acc, color) => acc + parseInt(color, 16), 0) / v.gradient_colors.length;
+              }
+              return {
+                mode,
+                color: finalColor,
+              };
+            }),
+        );
+      }),
+  })
+  .transform((v) => {
+    return (
+      providerCommentItemSchema.safeParse({
+        id: v.id,
+        timestamp: v.time_offset,
+        mode: v.content_style?.mode,
+        color: v.content_style?.color,
+        content: v.content,
+      }).data ?? null
+    );
+  });
 
 const tencentSegmentSchema = z.object({
   barrage_list: z
@@ -189,40 +228,9 @@ export class TencentScraper extends BaseScraper<typeof tencentIdSchema> {
     if (!tencentId?.vid) {
       return [];
     }
-    const rawComments = await this.internalGetComments(tencentId.vid, segmentId);
-    this.logger.info("找到", rawComments.length, "条弹幕");
-
-    if (!rawComments || rawComments.length === 0) {
-      return [];
-    }
-
-    return rawComments.map((c) => {
-      let mode = CommentMode.SCROLL; // 滚动
-      let color = 16777215; // 白色
-      if (c.content_style) {
-        if (c.content_style.position === 2) {
-          mode = CommentMode.TOP; // 顶部
-        } else if (c.content_style.position === 3) {
-          mode = CommentMode.BOTTOM; // 底部
-        }
-
-        if (c.content_style.color) {
-          try {
-            color = parseInt(c.content_style.color, 10);
-          } catch (e) {
-            // 转换失败则使用默认白色
-            this.logger.debug("转换颜色失败，vid：", tencentId.vid, "segmentId：", segmentId, "错误：", e);
-          }
-        }
-      }
-      return {
-        id: c.id.toString(),
-        timestamp: parseInt(c.time_offset, 10) / 1000.0,
-        mode,
-        color,
-        content: c.content,
-      };
-    });
+    const comments = await this.internalGetComments(tencentId.vid, segmentId);
+    this.logger.info("找到", comments.length, "条弹幕");
+    return comments;
   }
 
   /**
@@ -294,7 +302,7 @@ export class TencentScraper extends BaseScraper<typeof tencentIdSchema> {
         schema: tencentSegmentSchema,
       });
       return response.data?.barrage_list ?? [];
-    } catch (e: any) {
+    } catch (e) {
       this.logger.error("获取分段", segmentId, "失败，vid：", vid, "错误：", e);
       return [];
     }

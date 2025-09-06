@@ -1,7 +1,7 @@
 import { compact } from "es-toolkit";
 import { z } from "zod";
 import { base64ToUint8Array } from "../../libs/utils";
-import { BaseScraper, CommentMode, type ProviderEpisodeInfo } from "../base";
+import { BaseScraper, type ProviderEpisodeInfo, providerCommentItemSchema } from "../base";
 import { biliproto } from "./dm.proto";
 
 const bilibiliIdSchema = z.object({
@@ -123,13 +123,15 @@ export class BilibiliScraper extends BaseScraper<typeof bilibiliIdSchema> {
       if (!sanitizedContent) {
         return null;
       }
-      return {
-        id: comment.id.toString(),
-        timestamp: comment.progress / 1000.0,
-        mode: comment.mode ?? CommentMode.SCROLL,
-        color: comment.color ?? 16777215,
-        content: sanitizedContent,
-      };
+      return (
+        providerCommentItemSchema.safeParse({
+          id: comment.id.toString(),
+          timestamp: comment.progress / 1000,
+          mode: comment.mode,
+          color: comment.color,
+          content: sanitizedContent,
+        }).data ?? null
+      );
     });
   }
 
@@ -149,15 +151,17 @@ export class BilibiliScraper extends BaseScraper<typeof bilibiliIdSchema> {
 
   private async fetchCommentsForCid(aid: string, cid: string, segmentIndex: string) {
     try {
-      const response = await this.fetch.get<string>(
-        `https://api.bilibili.com/x/v2/dm/web/seg.so?type=1&oid=${cid}&pid=${aid}&segment_index=${segmentIndex}`,
-        {
-          base64Data: true,
+      const response = await this.fetch.get<string>("https://api.bilibili.com/x/v2/dm/web/seg.so", {
+        params: {
+          type: "1",
+          oid: cid,
+          pid: aid,
+          segment_index: segmentIndex,
         },
-      );
+        base64Data: true,
+      });
       if (response.statusCode === 404 || response.statusCode === 304) return null;
       const data = this.DmSegMobileReply.decode(base64ToUint8Array(response.data));
-      console.log(data);
       return data.elems;
     } catch (error) {
       this.logger.error("获取分段", segmentIndex, "失败，aid：", aid, "cid：", cid, "错误：", error);

@@ -6,11 +6,11 @@ import modeECB from "crypto-js/mode-ecb";
 import padPKCS7 from "crypto-js/pad-pkcs7";
 import { compact, isNil } from "es-toolkit";
 import { z } from "zod";
-import { MediaType, searchDanmuParamsSchema } from "../libs/constants";
+import { DEFAULT_COLOR_INT, MediaType, searchDanmuParamsSchema } from "../libs/constants";
 import type { HttpResponse, RequestOptions } from "../libs/fetch";
 import { TTL_1_DAY } from "../libs/storage";
 import { generateUUID, safeJsonParseWithZod } from "../libs/utils";
-import { BaseScraper, type ProviderCommentItem, type ProviderDramaInfo, type ProviderEpisodeInfo } from "./base";
+import { BaseScraper, type ProviderDramaInfo, type ProviderEpisodeInfo, providerCommentItemSchema } from "./base";
 
 const AES_KEY = "3b744389882a4067";
 const SIGN_SECRET = "ES513W0B1CsdUrR13Qk5EgDAKPeeKZY";
@@ -107,22 +107,30 @@ const renrenCommentItemSchema = z
       const parts = val.split(",");
       const timestamp = z.coerce.number().catch(0.0).parse(parts[0]);
       const mode = z.coerce.number().int().catch(1).parse(parts[1]);
-      const size = z.coerce.number().int().catch(25).parse(parts[2]);
-      const color = z.coerce.number().int().catch(16777215).parse(parts[3]);
+      // const size = z.coerce.number().int().catch(25).parse(parts[2]);
+      const color = z.coerce.number().int().catch(DEFAULT_COLOR_INT).parse(parts[3]);
       const userId = parts[6] || "";
       const contentId = parts[7] || `${timestamp.toFixed(3)}:${userId}`;
-      return { timestamp, mode, size, color, userId, contentId };
+      return {
+        timestamp,
+        mode,
+        //  size,
+        color,
+        userId,
+        contentId,
+      };
     }),
   })
   .transform((v) => {
-    const result: ProviderCommentItem = {
-      id: v.p.contentId,
-      timestamp: v.p.timestamp,
-      mode: v.p.mode,
-      color: v.p.color,
-      content: v.d,
-    };
-    return result;
+    return (
+      providerCommentItemSchema.safeParse({
+        id: v.p.contentId,
+        timestamp: v.p.timestamp,
+        mode: v.p.mode,
+        color: v.p.color,
+        content: v.d,
+      }).data ?? null
+    );
   });
 
 export class RenRenScraper extends BaseScraper<typeof renrenIdSchema> {
@@ -179,6 +187,7 @@ export class RenRenScraper extends BaseScraper<typeof renrenIdSchema> {
     if (!response.data) {
       return [];
     }
+    this.logger.info("搜索结果：", response.data);
     let results: ProviderDramaInfo[] = [];
     for await (const item of response.data) {
       const title = item.title.replace(/<[^>]+>/g, "").replace(":", "：");
