@@ -1,10 +1,10 @@
 import { compact } from "es-toolkit";
 import { qs } from "url-parse";
 import { z } from "zod";
-import { DEFAULT_COLOR_HEX, DEFAULT_COLOR_INT } from "../libs/constants";
-import { TTL_2_HOURS } from "../libs/storage";
-import { safeJsonParseWithZod } from "../libs/utils";
-import { BaseScraper, CommentMode, type ProviderEpisodeInfo, providerCommentItemSchema } from "./base";
+import { DEFAULT_COLOR_HEX, DEFAULT_COLOR_INT } from "../../libs/constants";
+import { TTL_2_HOURS } from "../../libs/storage";
+import { safeJsonParseWithZod } from "../../libs/utils";
+import { BaseScraper, CommentMode, type ProviderEpisodeInfo, providerCommentItemSchema } from "../base";
 
 const tencentIdSchema = z.object({
   cid: z.string(),

@@ -10,6 +10,7 @@ import type {
 } from "./base";
 import { BilibiliScraper } from "./bilibili";
 import { IqiyiScraper } from "./iqiyi";
+import { providerConfigSchema } from "./provider-config";
 import { RenRenScraper } from "./renren";
 import { TencentScraper } from "./tencent";
 import { YoukuScraper } from "./youku";
@@ -201,5 +202,14 @@ export class Scraper {
       options.push({ provider: drama.provider, idString, episodeNumber });
     }
     return this.getEpisodes(...uniqWith(options, isEqual));
+  }
+
+  setProviderConfig(params: GlobalParams) {
+    const { success, data } = providerConfigSchema.safeParse(params);
+    if (success) {
+      this.scrapers.forEach((scraper) => {
+        scraper.providerConfig = data;
+      });
+    }
   }
 }

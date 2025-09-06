@@ -20,7 +20,7 @@ export function safeJsonParseWithZod<T extends z.ZodType>(json: string, schema: 
     console.warn(`Failed to parse JSON with Zod: ${json}`, error);
     return null;
   }
-  return data as T["_zod"]["output"];
+  return data as z.infer<T>;
 }
 
 export function base64ToUint8Array(base64: string): Uint8Array {

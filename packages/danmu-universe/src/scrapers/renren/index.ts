@@ -6,11 +6,11 @@ import modeECB from "crypto-js/mode-ecb";
 import padPKCS7 from "crypto-js/pad-pkcs7";
 import { compact, isNil } from "es-toolkit";
 import { z } from "zod";
-import { DEFAULT_COLOR_INT, MediaType, searchDanmuParamsSchema } from "../libs/constants";
-import type { HttpResponse, RequestOptions } from "../libs/fetch";
-import { TTL_1_DAY } from "../libs/storage";
-import { generateUUID, safeJsonParseWithZod } from "../libs/utils";
-import { BaseScraper, type ProviderDramaInfo, type ProviderEpisodeInfo, providerCommentItemSchema } from "./base";
+import { DEFAULT_COLOR_INT, MediaType, searchDanmuParamsSchema } from "../../libs/constants";
+import type { HttpResponse, RequestOptions } from "../../libs/fetch";
+import { TTL_1_DAY } from "../../libs/storage";
+import { generateUUID, safeJsonParseWithZod } from "../../libs/utils";
+import { BaseScraper, type ProviderDramaInfo, type ProviderEpisodeInfo, providerCommentItemSchema } from "../base";
 
 const AES_KEY = "3b744389882a4067";
 const SIGN_SECRET = "ES513W0B1CsdUrR13Qk5EgDAKPeeKZY";
@@ -294,7 +294,11 @@ export class RenRenScraper extends BaseScraper<typeof renrenIdSchema> {
   }
 
   private async fetchEpisodeDanmu(episodeId: string) {
-    const response = await this.fetch.get(`https://static-dm.rrmj.plus/v1/produce/danmu/EPISODE/${episodeId}`, {
+    let url = `https://static-dm.rrmj.plus/v1/produce/danmu/EPISODE/${episodeId}`;
+    if (this.providerConfig.renren.mode === "choice") {
+      url = `https://static-dm.rrmj.plus/v1/produce/danmu/choice/EPISODE/${episodeId}`;
+    }
+    const response = await this.fetch.get(url, {
       headers: {
         Accept: "application/json",
       },

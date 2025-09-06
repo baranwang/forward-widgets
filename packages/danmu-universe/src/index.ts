@@ -1,4 +1,4 @@
-import { type MediaType, PROVIDER_NAMES } from "./libs/constants";
+import { EMPTY_ANIME_CONFIG, type MediaType, PROVIDER_NAMES } from "./libs/constants";
 import { getDoubanIds } from "./libs/douban";
 import { Scraper } from "./scrapers";
 
@@ -65,6 +65,23 @@ WidgetMetadata = {
         },
       ],
     },
+    {
+      title: `[${PROVIDER_NAMES.renren}] 弹幕模式`,
+      name: "provider.renren.mode",
+      description: "弹幕模式，精选弹幕相比默认弹幕质量更高",
+      value: "default",
+      type: "enumeration",
+      enumOptions: [
+        {
+          title: "默认",
+          value: "default",
+        },
+        {
+          title: "精选",
+          value: "choice",
+        },
+      ],
+    },
   ],
   modules: [
     {
@@ -101,6 +118,8 @@ WidgetMetadata = {
 const scraper = new Scraper();
 
 searchDanmu = async (params) => {
+  scraper.setProviderConfig(params);
+
   const { type: mediaType, episode, fuzzyMatch = "auto" } = params;
 
   let episodes: Array<GetDetailResponseItem & { provider: string }> = [];
@@ -119,15 +138,15 @@ searchDanmu = async (params) => {
     return {
       animes: [
         {
-          animeId: "empty",
-          animeTitle: process.env.NODE_ENV === "development" ? JSON.stringify(params) : "😭 未匹配到资源",
+          animeId: EMPTY_ANIME_CONFIG.ID,
+          animeTitle: process.env.NODE_ENV === "development" ? JSON.stringify(params) : EMPTY_ANIME_CONFIG.ID,
         },
       ],
     };
   }
   return {
     animes: episodes.map((item) => {
-      let animeTitle = `[${PROVIDER_NAMES[item.provider]}] `;
+      let animeTitle = `[${PROVIDER_NAMES[item.provider as keyof typeof PROVIDER_NAMES]}] `;
       if (item.episodeTitle) {
         animeTitle += item.episodeTitle;
       }
@@ -140,16 +159,23 @@ searchDanmu = async (params) => {
 };
 
 getDetail = async (params) => {
+  scraper.setProviderConfig(params);
+
   const { animeId, type: mediaType, episode } = params;
-  if (!animeId) {
+  if (!animeId || animeId === EMPTY_ANIME_CONFIG.ID) {
     return null;
   }
   return scraper.getDetailWithAnimeId(animeId.toString(), mediaType as MediaType, episode);
 };
 
 getComments = async (params) => {
+  scraper.setProviderConfig(params);
+
   const { animeId, commentId, segmentTime, tmdbId, type: mediaType, episode } = params;
   let videoId = commentId ?? animeId;
+  if (videoId === EMPTY_ANIME_CONFIG.ID) {
+    return null;
+  }
   if (!videoId) {
     if (!tmdbId) {
       return null;

@@ -1,7 +1,9 @@
+import { get } from "es-toolkit/compat";
 import { z } from "zod";
 import { DEFAULT_COLOR_INT } from "../libs/constants";
 import { Fetch } from "../libs/fetch";
 import { safeJsonParse } from "../libs/utils";
+import type { ProviderConfig } from "./provider-config";
 
 export interface ProviderDramaInfo {
   /** 数据源提供方 */
@@ -59,6 +61,19 @@ export type ProviderCommentItem = z.infer<typeof providerCommentItemSchema>;
 
 export abstract class BaseScraper<IDType extends z.ZodType = any> {
   abstract providerName: string;
+
+  private _providerConfig = {} as ProviderConfig;
+
+  protected get providerConfig() {
+    return this._providerConfig;
+  }
+  protected set providerConfig(config: ProviderConfig) {
+    const currentConfig = get(config, this.providerName);
+    if (currentConfig) {
+      this.logger.debug("设置 Provider 配置", currentConfig);
+      this._providerConfig = config;
+    }
+  }
 
   protected idSchema?: IDType;
 

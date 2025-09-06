@@ -2,8 +2,8 @@ import MD5 from "crypto-js/md5";
 import { compact } from "es-toolkit";
 import { XMLParser } from "fast-xml-parser";
 import { z } from "zod";
-import { DEFAULT_COLOR_HEX } from "../libs/constants";
-import { BaseScraper, type ProviderEpisodeInfo, providerCommentItemSchema } from "./base";
+import { DEFAULT_COLOR_HEX } from "../../libs/constants";
+import { BaseScraper, type ProviderEpisodeInfo, providerCommentItemSchema } from "../base";
 
 const iqiyiIdSchema = z.object({
   /** entity_id / tv_id */

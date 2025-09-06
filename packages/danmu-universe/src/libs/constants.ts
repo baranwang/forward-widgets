@@ -8,7 +8,7 @@ export enum MediaType {
 export const DEFAULT_COLOR_HEX = "ffffff";
 export const DEFAULT_COLOR_INT = parseInt(DEFAULT_COLOR_HEX, 16);
 
-export const PROVIDER_NAMES: Record<string, string> = {
+export const PROVIDER_NAMES = {
   tencent: "腾讯视频",
   iqiyi: "爱奇艺",
   youku: "优酷视频",
@@ -28,3 +28,8 @@ export const searchDanmuParamsSchema = z.object({
   episode: z.coerce.number().optional(),
   fuzzyMatch: z.enum(["always", "never", "auto"]).catch("auto").optional().default("auto"),
 });
+
+export const EMPTY_ANIME_CONFIG = {
+  ID: "__empty__",
+  TITLE: "😭 未匹配到资源",
+};

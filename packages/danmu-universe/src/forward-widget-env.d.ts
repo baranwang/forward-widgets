@@ -6,6 +6,12 @@ interface GlobalParams {
      * @default 'auto'
      */
     fuzzyMatch: 'auto' | 'always' | 'never';
+    /**
+     * [人人视频] 弹幕模式
+     * @description 弹幕模式，精选弹幕相比默认弹幕质量更高
+     * @default 'default'
+     */
+    'provider.renren.mode': 'default' | 'choice';
 }
 
 //#region searchDanmu

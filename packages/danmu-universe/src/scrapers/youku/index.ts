@@ -3,9 +3,9 @@ import Utf8 from "crypto-js/enc-utf8";
 import MD5 from "crypto-js/md5";
 import { qs } from "url-parse";
 import { z } from "zod";
-import { DEFAULT_COLOR_INT } from "../libs/constants";
-import { safeJsonParseWithZod } from "../libs/utils";
-import { BaseScraper, CommentMode, type ProviderEpisodeInfo, providerCommentItemSchema } from "./base";
+import { DEFAULT_COLOR_INT } from "../../libs/constants";
+import { safeJsonParseWithZod } from "../../libs/utils";
+import { BaseScraper, CommentMode, type ProviderEpisodeInfo, providerCommentItemSchema } from "../base";
 
 const youkuIdSchema = z.object({
   showId: z.string().optional(),
