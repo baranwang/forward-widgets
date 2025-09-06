@@ -318,9 +318,7 @@ export class RenRenScraper extends BaseScraper<typeof renrenIdSchema> {
       `t:${timestampMs}`,
       `${path}?${sortedQuery}`,
     ].join("\n");
-    console.warn("RenRen: signStr", signStr);
     const signature = HmacSHA256(signStr, secret);
-    console.warn("RenRen: signature", signature);
     return Base64.stringify(signature);
   }
 
@@ -347,7 +345,6 @@ export class RenRenScraper extends BaseScraper<typeof renrenIdSchema> {
       sortedQuery,
       secret: SIGN_SECRET,
     });
-    console.warn("RenRen: xCaSign", xCaSign);
     return {
       clientVersion: CLIENT_VERSION,
       deviceId,
@@ -371,9 +368,7 @@ export class RenRenScraper extends BaseScraper<typeof renrenIdSchema> {
   private request<T>(path: string, options: RequestOptions<never>): Promise<HttpResponse<T>>;
   private request<T>(path: string, options: RequestOptions): Promise<HttpResponse<T>> {
     const { params = {}, ...restOptions } = options;
-    console.warn("RenRen: request", path, params);
     const headers = this.generateHeaders({ method: "GET", path, params });
-    console.warn("RenRen: headers", headers);
     return this.fetch.get<T>(`${BASE_API}${path}`, {
       ...restOptions,
       headers,
