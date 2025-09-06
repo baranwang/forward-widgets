@@ -1,5 +1,12 @@
 # @forward-widget/danmu-universe
 
+## 0.2.1
+
+### Patch Changes
+
+- a5c0a71: 增加未匹配到资源提示
+- 4bbabb6: 修复爱奇艺 emoji 表情未解析的问题
+
 ## 0.2.0
 
 ### Minor Changes
