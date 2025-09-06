@@ -115,12 +115,12 @@ searchDanmu = async (params) => {
     episodes = episodes.concat(searchEpisodes);
   }
 
-  if (!episodes.length && process.env.NODE_ENV === "development") {
+  if (!episodes.length) {
     return {
       animes: [
         {
           animeId: "empty",
-          animeTitle: JSON.stringify(params),
+          animeTitle: process.env.NODE_ENV === "development" ? JSON.stringify(params) : "😭 未匹配到资源",
         },
       ],
     };
