@@ -1,5 +1,5 @@
 import Base64 from "crypto-js/enc-base64";
-import type { z } from "zod";
+import type { z } from "./zod";
 
 export function safeJsonParse<T>(json: string): T | null {
   try {

@@ -7,6 +7,12 @@ interface GlobalParams {
      */
     fuzzyMatch: 'auto' | 'always' | 'never';
     /**
+     * 未匹配到资源提示
+     * @description 是否显示未匹配到资源提示
+     * @default 'true'
+     */
+    emptyAnimeTitle: 'true' | 'false';
+    /**
      * [人人视频] 弹幕模式
      * @description 弹幕模式，精选弹幕相比默认弹幕质量更高
      * @default 'default'

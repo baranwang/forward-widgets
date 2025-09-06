@@ -1,5 +1,6 @@
 import { EMPTY_ANIME_CONFIG, type MediaType, PROVIDER_NAMES } from "./libs/constants";
 import { getDoubanIds } from "./libs/douban";
+import { z } from "./libs/zod";
 import { Scraper } from "./scrapers";
 
 if (import.meta.rstest) {
@@ -62,6 +63,23 @@ WidgetMetadata = {
         {
           title: "始终关闭",
           value: "never",
+        },
+      ],
+    },
+    {
+      title: "未匹配到资源提示",
+      name: "emptyAnimeTitle",
+      description: "是否显示未匹配到资源提示",
+      value: "true",
+      type: "enumeration",
+      enumOptions: [
+        {
+          title: "开启",
+          value: "true",
+        },
+        {
+          title: "关闭",
+          value: "false",
         },
       ],
     },
@@ -134,7 +152,9 @@ searchDanmu = async (params) => {
     episodes = episodes.concat(searchEpisodes);
   }
 
-  if (!episodes.length) {
+  const showEmptyAnimeTitle =
+    process.env.NODE_ENV === "development" || z.stringbool().catch(true).parse(params.emptyAnimeTitle);
+  if (!episodes.length && showEmptyAnimeTitle) {
     return {
       animes: [
         {

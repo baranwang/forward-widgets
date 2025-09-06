@@ -1,6 +1,6 @@
 import { set } from "es-toolkit/compat";
 import type { Simplify, Split, UnionToIntersection } from "type-fest";
-import { z } from "zod";
+import { z } from "../libs/zod";
 
 type FromSegments<Segs extends string[], V> = Segs extends [infer Head extends string, ...infer Rest extends string[]]
   ? { [K in Head]: FromSegments<Rest, V> }

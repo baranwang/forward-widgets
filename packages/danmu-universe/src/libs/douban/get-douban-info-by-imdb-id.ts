@@ -1,7 +1,7 @@
-import { z } from "zod";
 import { fetch } from "../fetch";
 import { getImdbEpisodes, getImdbSeasons } from "../imdb";
 import { TTL_7_DAYS } from "../storage";
+import { z } from "../zod";
 import { DOUBAN_API_KEY } from "./constants";
 
 const doubanImdbResponseSchema = z.object({

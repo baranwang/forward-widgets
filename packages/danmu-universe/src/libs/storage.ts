@@ -1,5 +1,5 @@
-import { z } from "zod";
 import { safeJsonParse, safeJsonParseWithZod } from "./utils";
+import { z } from "./zod";
 
 interface SetOptions {
   /** 覆盖默认 TTL（毫秒） */

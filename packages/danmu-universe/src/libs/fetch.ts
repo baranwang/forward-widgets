@@ -1,7 +1,7 @@
 import { merge, omit } from "es-toolkit";
 import { qs } from "url-parse";
-import { z } from "zod";
 import { storage } from "./storage";
+import { z } from "./zod";
 
 type BaseRequestOptions = NonNullable<Parameters<typeof Widget.http.get>[1]>;
 export interface RequestOptions<T extends z.ZodType | undefined = undefined>

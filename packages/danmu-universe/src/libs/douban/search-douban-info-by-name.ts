@@ -1,6 +1,6 @@
 import { compact } from "es-toolkit";
-import { z } from "zod";
 import { fetch } from "../fetch";
+import { z } from "../zod";
 
 const doubanSubjectItemSchema = z.object({
   type_name: z.string(),

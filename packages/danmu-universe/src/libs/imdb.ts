@@ -1,5 +1,5 @@
-import { z } from "zod";
 import { Fetch } from "./fetch";
+import { z } from "./zod";
 
 const BASE_URL = "https://api.imdbapi.dev";
 

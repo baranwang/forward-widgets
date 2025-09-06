@@ -1,5 +1,4 @@
 import parseUrl from "url-parse";
-import { z } from "zod";
 import type { BilibiliId } from "../../scrapers/bilibili";
 import type { IqiyiId } from "../../scrapers/iqiyi";
 import type { TencentId } from "../../scrapers/tencent";
@@ -7,6 +6,7 @@ import type { YoukuId } from "../../scrapers/youku";
 import { MediaType } from "../constants";
 import { fetch } from "../fetch";
 import { TTL_7_DAYS } from "../storage";
+import { z } from "../zod";
 
 const doubanInfoResponseSchema = z.object({
   is_tv: z.boolean().optional(),

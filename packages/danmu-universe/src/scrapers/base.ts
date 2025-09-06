@@ -1,8 +1,8 @@
 import { get } from "es-toolkit/compat";
-import { z } from "zod";
 import { DEFAULT_COLOR_INT } from "../libs/constants";
 import { Fetch } from "../libs/fetch";
 import { safeJsonParse } from "../libs/utils";
+import { z } from "../libs/zod";
 import type { ProviderConfig } from "./provider-config";
 
 export interface ProviderDramaInfo {
