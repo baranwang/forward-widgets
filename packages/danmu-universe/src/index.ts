@@ -139,7 +139,7 @@ searchDanmu = async (params) => {
       animes: [
         {
           animeId: EMPTY_ANIME_CONFIG.ID,
-          animeTitle: process.env.NODE_ENV === "development" ? JSON.stringify(params) : EMPTY_ANIME_CONFIG.ID,
+          animeTitle: process.env.NODE_ENV === "development" ? JSON.stringify(params) : EMPTY_ANIME_CONFIG.TITLE,
         },
       ],
     };

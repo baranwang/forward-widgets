@@ -64,10 +64,10 @@ export abstract class BaseScraper<IDType extends z.ZodType = any> {
 
   private _providerConfig = {} as ProviderConfig;
 
-  protected get providerConfig() {
+  public get providerConfig() {
     return this._providerConfig;
   }
-  protected set providerConfig(config: ProviderConfig) {
+  public set providerConfig(config: ProviderConfig) {
     const currentConfig = get(config, this.providerName);
     if (currentConfig) {
       this.logger.debug("设置 Provider 配置", currentConfig);
