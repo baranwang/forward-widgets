@@ -69,12 +69,13 @@ class Storage {
     return this.set(key, JSON.stringify(value), options);
   }
 
-  cleanup() {
+  async cleanup() {
     try {
       const META_LAST_CLEANUP_KEY = "__storage_last_cleanup__";
       const skipCleanup = this.get(META_LAST_CLEANUP_KEY);
       if (!skipCleanup) {
-        Widget.storage.keys().forEach((key) => {
+        const keys = await Widget.storage.keys();
+        keys.forEach((key) => {
           this.get(key);
         });
       }

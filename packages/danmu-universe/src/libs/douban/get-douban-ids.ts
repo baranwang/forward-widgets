@@ -1,23 +1,11 @@
-import { z } from "zod";
-import type { MediaType } from "../../constants";
+import { type MediaType, searchDanmuParamsSchema } from "../constants";
 import { getExternalIdsByTmdbId } from "../tmdb";
 import { getDoubanInfoByImdbId } from "./get-douban-info-by-imdb-id";
 import { searchDoubanInfoByName } from "./search-douban-info-by-name";
 
-const getDoubanInfoParamsSchema = z.object({
-  tmdbId: z.coerce.string().optional(),
-  type: z.enum(["movie", "tv"]).transform((val) => val as MediaType),
-  title: z.coerce.string().optional(),
-  seriesName: z.coerce.string().optional(),
-  season: z.coerce.number().optional(),
-  episode: z.coerce.number().optional(),
-
-  fuzzyMatch: z.enum(["always", "never", "auto"]).catch("auto").optional().default("auto"),
-});
-
 export const getDoubanIds = async (params: SearchDanmuParams) => {
   const doubanIds = new Set<string>();
-  const { tmdbId, type, seriesName, season, fuzzyMatch } = getDoubanInfoParamsSchema.parse(params);
+  const { tmdbId, type, seriesName, season, fuzzyMatch } = searchDanmuParamsSchema.parse(params);
   try {
     const doubanInfo = await getDoubanInfoByTmdbId(type, tmdbId, season);
     if (doubanInfo?.doubanId) {

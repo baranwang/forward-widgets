@@ -24,21 +24,6 @@ interface SearchDanmuReturnType {
 declare let searchDanmu: (params: SearchDanmuParams) => SearchDanmuReturnType | null | Promise<SearchDanmuReturnType | null>;
 //#endregion searchDanmu
 
-//#region getComments
-/** Params of 获取弹幕 */
-interface GetCommentsParams extends GlobalParams, BaseDanmuParams, EpisodeItem {
-}
-
-interface GetCommentsReturnType extends GetCommentsResponse {
-}
-
-/**
- * 获取弹幕
- * @description 获取弹幕
- */
-declare let getComments: (params: GetCommentsParams) => GetCommentsReturnType | null | Promise<GetCommentsReturnType | null>;
-//#endregion getComments
-
 //#region getDetail
 /** Params of 获取详情 */
 interface GetDetailParams extends GlobalParams, BaseDanmuParams, AnimeItem {
@@ -53,6 +38,21 @@ interface GetDetailReturnType extends Array<GetDetailResponseItem> {
  */
 declare let getDetail: (params: GetDetailParams) => GetDetailReturnType | null | Promise<GetDetailReturnType | null>;
 //#endregion getDetail
+
+//#region getComments
+/** Params of 获取弹幕 */
+interface GetCommentsParams extends GlobalParams, BaseDanmuParams, EpisodeItem {
+}
+
+interface GetCommentsReturnType extends GetCommentsResponse {
+}
+
+/**
+ * 获取弹幕
+ * @description 获取弹幕
+ */
+declare let getComments: (params: GetCommentsParams) => GetCommentsReturnType | null | Promise<GetCommentsReturnType | null>;
+//#endregion getComments
 
 //#region getDanmuWithSegmentTime
 /** Params of 获取弹幕切片 */

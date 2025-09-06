@@ -2,6 +2,17 @@ import { z } from "zod";
 import { Fetch } from "../libs/fetch";
 import { safeJsonParse } from "../libs/utils";
 
+export interface ProviderDramaInfo {
+  /** 数据源提供方 */
+  provider: string;
+  /** 剧集ID */
+  dramaId: string;
+  /** 剧集标题 */
+  dramaTitle: string;
+  /** 季序号 */
+  season: number;
+}
+
 export interface ProviderEpisodeInfo {
   /** 数据源提供方 */
   provider: string;
@@ -65,7 +76,7 @@ export abstract class BaseScraper<IDType extends z.ZodType = any> {
     return encodeURIComponent(JSON.stringify(id));
   }
 
-  protected search?(params: SearchDanmuParams): Promise<ProviderEpisodeInfo[]>;
+  search?(params: SearchDanmuParams): Promise<ProviderDramaInfo[]>;
 
   abstract getEpisodes(idString: string, episodeIndex?: number): Promise<ProviderEpisodeInfo[]>;
 

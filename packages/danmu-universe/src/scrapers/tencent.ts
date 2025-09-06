@@ -136,8 +136,7 @@ export class TencentScraper extends BaseScraper<typeof tencentIdSchema> {
 
     // 如果指定了目标，则只返回目标分集
     if (episodeNumber !== undefined) {
-      const targetEpisode = allProviderEpisodes.find((ep) => ep.episodeNumber === episodeNumber);
-      return targetEpisode ? [targetEpisode] : [];
+      return allProviderEpisodes.filter((ep) => ep.episodeNumber === episodeNumber);
     }
 
     return allProviderEpisodes;

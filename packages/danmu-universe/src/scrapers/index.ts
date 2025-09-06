@@ -1,13 +1,20 @@
 import { isEqual, keyBy, sortBy, uniqWith } from "es-toolkit";
-import { MediaType } from "../constants";
+import { MediaType } from "../libs/constants";
 import { getVideoPlatformInfoByDoubanId } from "../libs/douban";
-import type { BaseScraper, ProviderCommentItem, ProviderEpisodeInfo, ProviderSegmentInfo } from "./base";
+import type {
+  BaseScraper,
+  ProviderCommentItem,
+  ProviderDramaInfo,
+  ProviderEpisodeInfo,
+  ProviderSegmentInfo,
+} from "./base";
 import { BilibiliScraper } from "./bilibili";
 import { IqiyiScraper } from "./iqiyi";
+import { RenRenScraper } from "./renren";
 import { TencentScraper } from "./tencent";
 import { YoukuScraper } from "./youku";
 
-const scrapers = [TencentScraper, YoukuScraper, IqiyiScraper, BilibiliScraper];
+const scrapers = [TencentScraper, YoukuScraper, IqiyiScraper, BilibiliScraper, RenRenScraper];
 
 export class Scraper {
   private scrapers: BaseScraper[] = [];
@@ -166,6 +173,33 @@ export class Scraper {
       });
     }
 
+    return this.getEpisodes(...uniqWith(options, isEqual));
+  }
+
+  async getDetailWithSearchParams(searchParams: SearchDanmuParams) {
+    const dramaTasks: Promise<ProviderDramaInfo[]>[] = [];
+    for (const scraper of this.scrapers) {
+      if (scraper.search) {
+        dramaTasks.push(
+          scraper.search(searchParams).catch((error) => {
+            console.error(error);
+            return [];
+          }),
+        );
+      }
+    }
+    const results = await Promise.all(dramaTasks);
+    const dramas = results.flat();
+    if (!dramas.length) return [];
+
+    const episodeNumber = this.getEpisodeNumber(searchParams.type as MediaType, searchParams.episode);
+    const options: Parameters<typeof this.getEpisodes> = [];
+    for (const drama of dramas) {
+      const scraper = this.scraperMap[drama.provider];
+      if (!scraper) continue;
+      const idString = scraper.generateIdString({ dramaId: drama.dramaId });
+      options.push({ provider: drama.provider, idString, episodeNumber });
+    }
     return this.getEpisodes(...uniqWith(options, isEqual));
   }
 }
