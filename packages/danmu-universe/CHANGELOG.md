@@ -1,5 +1,11 @@
 # @forward-widget/danmu-universe
 
+## 0.3.0
+
+### Minor Changes
+
+- 7c3a5bb: 人人视频新增弹幕模式选择，支持精选弹幕模式
+
 ## 0.2.1
 
 ### Patch Changes
