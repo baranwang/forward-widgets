@@ -1,5 +1,11 @@
 # @forward-widget/danmu-universe
 
+## 0.3.1
+
+### Patch Changes
+
+- 896f9d3: 修正开发环境下的动漫标题配置
+
 ## 0.3.0
 
 ### Minor Changes
