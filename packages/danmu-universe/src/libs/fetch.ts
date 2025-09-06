@@ -4,7 +4,8 @@ import { z } from "zod";
 import { storage } from "./storage";
 
 type BaseRequestOptions = NonNullable<Parameters<typeof Widget.http.get>[1]>;
-interface RequestOptions<T extends z.ZodType | undefined = undefined> extends Omit<BaseRequestOptions, "params"> {
+export interface RequestOptions<T extends z.ZodType | undefined = undefined>
+  extends Omit<BaseRequestOptions, "params"> {
   params?: Record<string, any>;
   timeout?: number;
   cache?: {
@@ -57,7 +58,7 @@ class HttpSchemaError extends Error {
   }
 }
 
-type HttpResponse<T> = Awaited<ReturnType<typeof Widget.http.get<T>>>;
+export type HttpResponse<T> = Awaited<ReturnType<typeof Widget.http.get<T>>>;
 
 export class Fetch {
   constructor(

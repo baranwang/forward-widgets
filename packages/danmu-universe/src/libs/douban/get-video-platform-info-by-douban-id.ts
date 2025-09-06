@@ -1,10 +1,10 @@
 import parseUrl from "url-parse";
 import { z } from "zod";
-import { MediaType } from "../../constants";
 import type { BilibiliId } from "../../scrapers/bilibili";
 import type { IqiyiId } from "../../scrapers/iqiyi";
 import type { TencentId } from "../../scrapers/tencent";
 import type { YoukuId } from "../../scrapers/youku";
+import { MediaType } from "../constants";
 import { fetch } from "../fetch";
 import { TTL_7_DAYS } from "../storage";
 

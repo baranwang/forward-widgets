@@ -1,6 +1,5 @@
-import { type MediaType, PROVIDER_NAMES } from "./constants";
+import { type MediaType, PROVIDER_NAMES } from "./libs/constants";
 import { getDoubanIds } from "./libs/douban";
-import { storage } from "./libs/storage";
 import { Scraper } from "./scrapers";
 
 if (import.meta.rstest) {
@@ -77,17 +76,17 @@ WidgetMetadata = {
     },
     {
       type: "danmu",
-      id: "getComments",
-      title: "获取弹幕",
-      functionName: "getComments",
-      description: "获取弹幕",
-    },
-    {
-      type: "danmu",
       id: "getDetail",
       title: "获取详情",
       functionName: "getDetail",
       description: "获取详情",
+    },
+    {
+      type: "danmu",
+      id: "getComments",
+      title: "获取弹幕",
+      functionName: "getComments",
+      description: "获取弹幕",
     },
     {
       type: "danmu",
@@ -102,20 +101,30 @@ WidgetMetadata = {
 const scraper = new Scraper();
 
 searchDanmu = async (params) => {
-  storage.cleanup();
+  const { type: mediaType, episode, fuzzyMatch = "auto" } = params;
 
-  const { tmdbId, type: mediaType, episode } = params;
+  let episodes: Array<GetDetailResponseItem & { provider: string }> = [];
 
-  if (!tmdbId) {
-    return null;
-  }
   const doubanIds = await getDoubanIds(params);
-  if (!doubanIds.length) {
-    return null;
+  if (doubanIds.length) {
+    episodes = await scraper.getDetailWithDoubanIds(doubanIds, mediaType as MediaType, episode);
   }
 
-  const episodes = await scraper.getDetailWithDoubanIds(doubanIds, mediaType as MediaType, episode);
+  if ((!episodes?.length && fuzzyMatch === "auto") || fuzzyMatch === "always") {
+    const searchEpisodes = await scraper.getDetailWithSearchParams(params);
+    episodes = episodes.concat(searchEpisodes);
+  }
 
+  if (!episodes.length && process.env.NODE_ENV === "development") {
+    return {
+      animes: [
+        {
+          animeId: "empty",
+          animeTitle: JSON.stringify(params),
+        },
+      ],
+    };
+  }
   return {
     animes: episodes.map((item) => {
       let animeTitle = `[${PROVIDER_NAMES[item.provider]}] `;
@@ -131,18 +140,11 @@ searchDanmu = async (params) => {
 };
 
 getDetail = async (params) => {
-  const { animeId, tmdbId, type: mediaType, episode } = params;
-  if (!tmdbId && !animeId) {
+  const { animeId, type: mediaType, episode } = params;
+  if (!animeId) {
     return null;
   }
-  if (animeId) {
-    return scraper.getDetailWithAnimeId(animeId.toString(), mediaType as MediaType, episode);
-  }
-  const doubanIds = await getDoubanIds(params);
-  if (!doubanIds.length) {
-    return null;
-  }
-  return scraper.getDetailWithDoubanIds(doubanIds, mediaType as MediaType, episode);
+  return scraper.getDetailWithAnimeId(animeId.toString(), mediaType as MediaType, episode);
 };
 
 getComments = async (params) => {
@@ -169,9 +171,15 @@ getComments = async (params) => {
 if (import.meta.rstest) {
   const { test, expect } = import.meta.rstest;
 
-  test("searchDanmu", async () => {
+  test.only("searchDanmu", async () => {
     // const danmu = await searchDanmu({ tmdbId: "1139695", type: "movie" } as SearchDanmuParams);
-    const danmu = await searchDanmu({ tmdbId: "252640", type: "tv", episode: "39" } as SearchDanmuParams);
+    const danmu = await searchDanmu({
+      // tmdbId: "119051",
+      seriesName: "星期三",
+      type: "tv",
+      season: "2",
+      episode: "4",
+    } as SearchDanmuParams);
     console.log(danmu);
     expect(danmu).toBeDefined();
     expect(danmu?.animes.length).toBeGreaterThan(0);

@@ -1,4 +1,4 @@
-import { MediaType } from "../constants";
+import { MediaType } from "./constants";
 import { storage, TTL_7_DAYS } from "./storage";
 
 interface TmdbExternalIds {
