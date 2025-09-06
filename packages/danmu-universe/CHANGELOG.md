@@ -1,5 +1,11 @@
 # @forward-widget/danmu-universe
 
+## 0.4.0
+
+### Minor Changes
+
+- 01e469e: 新增未匹配到资源提示开关
+
 ## 0.3.1
 
 ### Patch Changes
