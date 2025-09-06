@@ -146,7 +146,7 @@ export class RenRenScraper extends BaseScraper<typeof renrenIdSchema> {
   async search(params: SearchDanmuParams) {
     const { success, data, error } = searchDanmuParamsSchema.safeParse(params);
     if (!success) {
-      console.error("RenRen: Invalid search params", z.prettifyError(error));
+      this.logger.error("搜索参数无效，错误：", z.prettifyError(error));
       return [];
     }
     const { seriesName, season } = data;
@@ -169,7 +169,7 @@ export class RenRenScraper extends BaseScraper<typeof renrenIdSchema> {
       schema: aesResponeSchema.transform((v) => {
         const result = renrenSearchResponseSchema.safeParse(v?.data);
         if (!result.success) {
-          console.warn("RenRen: Search parse error", z.prettifyError(result.error), v?.data);
+          this.logger.warn("搜索解析错误，错误：", z.prettifyError(result.error), v?.data);
           return [];
         }
         return result.data?.searchDramaList;
@@ -185,7 +185,7 @@ export class RenRenScraper extends BaseScraper<typeof renrenIdSchema> {
 
       const dramaInfo = await this.getDramaInfo(item.id);
       if (!dramaInfo) {
-        console.log("RenRen: Search", title, "not found");
+        this.logger.warn("详细信息未找到，title：", title, "id：", item.id);
         continue;
       }
 
@@ -197,7 +197,7 @@ export class RenRenScraper extends BaseScraper<typeof renrenIdSchema> {
           item.name?.includes(seriesName)
         )
       ) {
-        console.log("RenRen: Search", title, "not match");
+        this.logger.warn("置信度过低，跳过，title：", title, "id：", item.id);
         continue;
       }
 
@@ -217,6 +217,7 @@ export class RenRenScraper extends BaseScraper<typeof renrenIdSchema> {
       results.push(providerDramaInfo);
 
       if (highConfidenceMatch) {
+        this.logger.info("命中高置信度，忽略其他，title：", title, "id：", item.id);
         results = [providerDramaInfo];
         break;
       }
@@ -269,7 +270,7 @@ export class RenRenScraper extends BaseScraper<typeof renrenIdSchema> {
       schema: aesResponeSchema.transform((v) => {
         const result = renrenDramaInfoResponseSchema.safeParse(v?.data);
         if (!result.success) {
-          console.warn("RenRen: getDramaInfo", dramaId, "parse error", z.prettifyError(result.error), v?.data);
+          this.logger.warn("详细信息解析错误，dramaId：", dramaId, "错误：", z.prettifyError(result.error), v?.data);
           return null;
         }
         return result.data;

@@ -165,7 +165,7 @@ export class YoukuScraper extends BaseScraper<typeof youkuIdSchema> {
       );
       return sortedVideos.map((video, index) => createEpisodeInfo(video, index + 1));
     } catch (error) {
-      console.error(`Youku: 获取分集失败 showId=${showId}:`, error);
+      this.logger.error("获取分集失败，showId：", showId, "错误：", error);
       return [];
     }
   }
@@ -181,14 +181,14 @@ export class YoukuScraper extends BaseScraper<typeof youkuIdSchema> {
       await this.ensureTokenCookie();
       const episodeInfo = await this.getVideoInfo(vid);
       if (!episodeInfo) {
-        console.warn(`Youku: Failed to get episode info for vid ${vid}`);
+        this.logger.warn("获取分集信息失败，vid：", vid);
         return [];
       }
 
       const totalMat = episodeInfo.totalMat;
 
       if (totalMat === 0) {
-        console.warn(`Youku: Video ${vid} has duration 0, no danmaku to fetch.`);
+        this.logger.warn("视频时长为0，无法获取弹幕，vid：", vid);
         return [];
       }
 
@@ -198,7 +198,7 @@ export class YoukuScraper extends BaseScraper<typeof youkuIdSchema> {
         segmentId: i.toString(),
       }));
     } catch (error) {
-      console.error(`Youku: Failed to get segments for vid ${vid}:`, error);
+      this.logger.error("获取分段信息失败，vid：", vid, "错误：", error);
       return [];
     }
   }
@@ -214,7 +214,7 @@ export class YoukuScraper extends BaseScraper<typeof youkuIdSchema> {
 
       return this.getDanmuContentByMat(vid, parseInt(segmentId, 10));
     } catch (error) {
-      console.error(`Youku: Failed to get danmaku for vid ${vid}:`, error);
+      this.logger.error("获取弹幕信息失败，vid：", vid, "错误：", error);
       return [];
     }
   }
@@ -253,8 +253,8 @@ export class YoukuScraper extends BaseScraper<typeof youkuIdSchema> {
   }
 
   private async getDanmuContentByMat(vid: string, mat: number) {
-    if (!this.token || !this.cna) {
-      console.error("Youku: Cannot get danmaku, _m_h5_tk is missing.");
+    if (!this.token) {
+      this.logger.error("无法获取弹幕，_m_h5_tk 缺失");
       return [];
     }
 
@@ -312,7 +312,7 @@ export class YoukuScraper extends BaseScraper<typeof youkuIdSchema> {
       );
 
       const result = response.data?.data.result?.data.result ?? [];
-      console.log(`Youku: 获取到分段 ${mat} 的弹幕 ${result.length} 条`);
+      this.logger.info("获取到分段", mat, "的弹幕", result.length, "条");
 
       if (!result || result.length === 0) {
         return [];
@@ -344,7 +344,7 @@ export class YoukuScraper extends BaseScraper<typeof youkuIdSchema> {
         };
       });
     } catch (error) {
-      console.error(`Youku: 解析弹幕响应失败 (vid=${vid}, mat=${mat}):`, error);
+      this.logger.error("解析弹幕响应失败，vid：", vid, "mat：", mat, "错误：", error);
       return [];
     }
   }
@@ -373,18 +373,18 @@ export class YoukuScraper extends BaseScraper<typeof youkuIdSchema> {
         },
       });
     } catch (error) {
-      console.warn(`Youku: 无法连接到 youku.com 获取 'cna' cookie。错误: ${error}`);
+      this.logger.warn("无法连接到 youku.com 获取 'cna' cookie。错误：", error);
     }
 
     // 步骤 2: 获取 '_m_h5_tk' 令牌, 此请求可能依赖于 'cna' cookie 的存在。
     try {
       await this.fetch.get("https://acs.youku.com/h5/mtop.com.youku.aplatform.weakget/1.0/?jsv=2.5.1&appKey=24679788");
     } catch (error) {
-      console.error(`Youku: 无法连接到 acs.youku.com 获取令牌 cookie。弹幕获取很可能会失败。错误: ${error}`);
+      this.logger.error("无法连接到 acs.youku.com 获取令牌 cookie。弹幕获取很可能会失败。错误：", error);
     }
 
     if (!this.cna || !this.token) {
-      console.warn(`Youku: 未能获取到弹幕签名所需的全部 cookie。 cna: '${this.cna}', token: '${this.token}'`);
+      this.logger.warn("未能获取到弹幕签名所需的全部 cookie。 cna：", this.cna, "token：", this.token);
     }
   }
 }
@@ -398,7 +398,7 @@ if (import.meta.rstest) {
     const episodes = await scraper.getEpisodes(scraper.generateIdString({ showId: "eaea48e7a4c746c7b62b" }));
     expect(episodes).toBeDefined();
     expect(episodes.length).toBeGreaterThan(0);
-    console.log(episodes);
+    scraper.logger.info("episodes：", episodes);
 
     const segments = await scraper.getSegments(episodes[0].episodeId);
     expect(segments).toBeDefined();

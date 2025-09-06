@@ -163,17 +163,17 @@ export class TencentScraper extends BaseScraper<typeof tencentIdSchema> {
       }
 
       if (!response.data?.segment_index) {
-        console.info(`vid='${tencentId.vid}' 没有找到弹幕分段索引。`);
+        this.logger.info("vid：", tencentId.vid, "没有找到弹幕分段索引。");
         return [];
       }
       segmentIndex = response.data.segment_index;
-    } catch (e: any) {
-      console.error(`获取弹幕索引失败 (vid=${tencentId.vid})`, e);
+    } catch (e) {
+      this.logger.error("获取弹幕索引失败，vid：", tencentId.vid, "错误：", e);
       return [];
     }
 
     const sortedKeys = Object.keys(segmentIndex).sort((a, b) => parseInt(a, 10) - parseInt(b, 10));
-    console.debug(`为 vid='${tencentId.vid}' 找到 ${sortedKeys.length} 个弹幕分段`);
+    this.logger.debug("为 vid：", tencentId.vid, "找到", sortedKeys.length, "个弹幕分段");
 
     return sortedKeys.map((key) => {
       return {
@@ -190,7 +190,7 @@ export class TencentScraper extends BaseScraper<typeof tencentIdSchema> {
       return [];
     }
     const rawComments = await this.internalGetComments(tencentId.vid, segmentId);
-    console.log("找到", rawComments.length, "条弹幕");
+    this.logger.info("找到", rawComments.length, "条弹幕");
 
     if (!rawComments || rawComments.length === 0) {
       return [];
@@ -211,6 +211,7 @@ export class TencentScraper extends BaseScraper<typeof tencentIdSchema> {
             color = parseInt(c.content_style.color, 10);
           } catch (e) {
             // 转换失败则使用默认白色
+            this.logger.debug("转换颜色失败，vid：", tencentId.vid, "segmentId：", segmentId, "错误：", e);
           }
         }
       }
@@ -280,7 +281,7 @@ export class TencentScraper extends BaseScraper<typeof tencentIdSchema> {
           break;
         }
       } catch (error) {
-        console.error(`获取分集列表失败 (cid=${cid})`, error);
+        this.logger.error("获取分集列表失败，cid：", cid, "错误：", error);
         break;
       }
     }
@@ -294,7 +295,7 @@ export class TencentScraper extends BaseScraper<typeof tencentIdSchema> {
       });
       return response.data?.barrage_list ?? [];
     } catch (e: any) {
-      console.error(`获取分段 ${segmentId} 失败 (vid=${vid}): ${e.message}`, e);
+      this.logger.error("获取分段", segmentId, "失败，vid：", vid, "错误：", e);
       return [];
     }
   }
@@ -306,7 +307,7 @@ if (import.meta.rstest) {
   test("tencent", async () => {
     const scraper = new TencentScraper();
     const episodes = await scraper.getEpisodes(scraper.generateIdString({ cid: "mzc002009y0nzq8" }));
-    console.log(episodes);
+    scraper.logger.info("episodes：", episodes);
     expect(episodes).toBeDefined();
     expect(episodes.length).toBeGreaterThan(0);
 

@@ -55,9 +55,11 @@ export class BilibiliScraper extends BaseScraper<typeof bilibiliIdSchema> {
     let episodeIndex = 1;
     for (const item of episodes ?? []) {
       if (item.badge === "预告") {
+        this.logger.warn("预告，跳过，title：", item.title);
         continue;
       }
       if (blacklistPattern?.test(item.title)) {
+        this.logger.warn("黑名单，跳过，title：", item.title);
         continue;
       }
       results.push({
@@ -99,15 +101,18 @@ export class BilibiliScraper extends BaseScraper<typeof bilibiliIdSchema> {
   async getComments(idString: string, segmentId: string) {
     const { aid, cid, seasonId } = this.parseIdString(idString) ?? {};
     if (!aid || !cid || !seasonId) {
+      this.logger.warn("aid：", aid, "cid：", cid, "seasonId：", seasonId, "不存在");
       return null;
     }
     const episodes = await this.getPgcEpisodes(seasonId);
     const episode = episodes?.find((ep) => ep.aid === parseInt(aid) && ep.cid === parseInt(cid));
     if (!episode) {
+      this.logger.warn("未找到分集，aid：", aid, "cid：", cid, "seasonId：", seasonId);
       return null;
     }
     const comments = await this.fetchCommentsForCid(aid, cid, segmentId);
     if (!comments) {
+      this.logger.warn("未找到弹幕，aid：", aid, "cid：", cid, "segmentId：", segmentId);
       return null;
     }
     return comments.map((comment) => {
@@ -155,7 +160,7 @@ export class BilibiliScraper extends BaseScraper<typeof bilibiliIdSchema> {
       console.log(data);
       return data.elems;
     } catch (error) {
-      console.error(`获取分段 ${segmentIndex} 失败 (aid=${aid}, cid=${cid}): ${error}`);
+      this.logger.error("获取分段", segmentIndex, "失败，aid：", aid, "cid：", cid, "错误：", error);
     }
 
     return null;
@@ -178,6 +183,6 @@ if (import.meta.rstest) {
     const comments = await scraper.getComments(episodes[0].episodeId, segments[0].segmentId);
     expect(comments).toBeDefined();
     expect(comments?.length).toBeGreaterThan(0);
-    console.log("获取", comments?.length, "条弹幕");
+    scraper.logger.info("获取", comments?.length, "条弹幕");
   });
 }

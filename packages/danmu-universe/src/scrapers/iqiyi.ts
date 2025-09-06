@@ -185,12 +185,12 @@ export class IqiyiScraper extends BaseScraper<typeof iqiyiIdSchema> {
     try {
       providerEpisodes = await this.getEpisodesV3(iqiyiId.entityId);
     } catch (error) {
-      console.warn(`爱奇艺: 新版API (v3) 获取分集时发生错误: ${error}`, error);
+      this.logger.warn("新版API (v3) 获取分集时发生错误：", error);
       providerEpisodes = [];
     }
     if (!providerEpisodes.length) {
       // TODO: 回退到旧版API
-      // console.warn("爱奇艺: 新版API (v3) 未返回分集或失败，正在回退到旧版API...");
+      // this.logger.warn("新版API (v3) 未返回分集或失败，正在回退到旧版API...");
     }
     return this.filterAndFinalizeEpisodes(providerEpisodes, episodeNumber);
   }
@@ -227,14 +227,14 @@ export class IqiyiScraper extends BaseScraper<typeof iqiyiIdSchema> {
     const s2 = tvId.slice(-2);
 
     const url = `http://cmts.iqiyi.com/bullet/${s1}/${s2}/${tvId}_300_${segmentId}.z`;
-    console.debug(`URL构建: s1=${s1}, s2=${s2}, 完整URL=${url}`);
+    this.logger.debug("URL构建: s1=", s1, "s2=", s2, "完整URL=", url);
 
     const response = await this.fetch.get<string>(url, { zlibMode: true });
 
     const xmlData = this.xmlParser.parse(response.data);
     const { success, data, error } = iqiyiCommentsResponseSchema.safeParse(xmlData);
     if (!success) {
-      console.warn(`爱奇艺: 解析弹幕数据时发生错误:`, z.prettifyError(error));
+      this.logger.warn("解析弹幕数据时发生错误：", z.prettifyError(error));
       return [];
     }
 
@@ -242,7 +242,9 @@ export class IqiyiScraper extends BaseScraper<typeof iqiyiIdSchema> {
       let color = 16777215;
       try {
         color = parseInt(comment.color, 16);
-      } catch (error) {}
+      } catch (error) {
+        this.logger.debug("转换颜色失败，color：", comment.color, "错误：", error);
+      }
       return {
         id: comment.contentId.toString(),
         timestamp: comment.showTime,
@@ -300,7 +302,7 @@ export class IqiyiScraper extends BaseScraper<typeof iqiyiIdSchema> {
 
         const { success, data, error } = iqiyiEpisodeTabSchema.safeParse(tab);
         if (!success) {
-          console.warn(`爱奇艺: 解析分集列表数据时发生错误:`, z.prettifyError(error), tab);
+          this.logger.warn("解析分集列表数据时发生错误：", z.prettifyError(error), tab);
           return [];
         }
         const blacklistPattern = this.getEpisodeBlacklistPattern();
@@ -332,7 +334,7 @@ export class IqiyiScraper extends BaseScraper<typeof iqiyiIdSchema> {
       }
       return episodes;
     } catch (error) {
-      console.error(`爱奇艺 (v3): 获取分集时发生错误: ${error}`);
+      this.logger.error("获取分集时发生错误：", error);
       return [];
     }
   }
@@ -350,7 +352,7 @@ export class IqiyiScraper extends BaseScraper<typeof iqiyiIdSchema> {
       }
       return finalResult.toString();
     } catch (error) {
-      console.error(`将 video_id '${videoId}' 转换为 entity_id 时出错: ${error}`);
+      this.logger.error("将 video_id '", videoId, "' 转换为 entity_id 时出错：", error);
       return null;
     }
   }
@@ -372,7 +374,7 @@ export class IqiyiScraper extends BaseScraper<typeof iqiyiIdSchema> {
       const originalCount = episodes.length;
       episodes = episodes.filter((ep) => !blacklistPattern.test(ep.episodeTitle));
       if (originalCount > episodes.length) {
-        console.info(`爱奇艺: 根据黑名单规则过滤掉了 ${originalCount - episodes.length} 个分集。`);
+        this.logger.info("根据黑名单规则过滤掉了", originalCount - episodes.length, "个分集。");
       }
     }
 

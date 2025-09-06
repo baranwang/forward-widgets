@@ -63,11 +63,11 @@ export abstract class BaseScraper<IDType extends z.ZodType = any> {
     const decodedIdString = safeJsonParse(decodeURIComponent(idString));
     const result = this.idSchema?.safeParse(decodedIdString);
     if (!result) {
-      console.log(this.providerName, "parseIdString", idString, "idSchema is not defined");
+      this.logger.error("parseIdString", idString, "idSchema is not defined");
       return null;
     }
     if (!result.success) {
-      console.log(this.providerName, "parseIdString", idString, z.prettifyError(result.error));
+      this.logger.error("parseIdString", idString, z.prettifyError(result.error));
       return null;
     }
     return result.data ?? null;
@@ -101,6 +101,7 @@ export abstract class BaseScraper<IDType extends z.ZodType = any> {
       try {
         return parseInt(match[1], 10);
       } catch (error) {
+        this.logger.error("从标题中提取集数失败：", title, "错误：", error);
         return null;
       }
     }
@@ -140,8 +141,26 @@ export abstract class BaseScraper<IDType extends z.ZodType = any> {
     try {
       return new RegExp(finalRegexStr, "i");
     } catch (e) {
-      console.error(`编译分集黑名单正则表达式失败: '${finalRegexStr}'. 错误: ${e}`);
+      this.logger.error("编译分集黑名单正则表达式失败：", finalRegexStr, "错误：", e);
     }
     return null;
   }
+
+  logger = {
+    log: (level: "debug" | "info" | "warn" | "error", ...args: any[]) => {
+      console[level](`[${this.providerName}]`, ...args);
+    },
+    debug: (...args: any[]) => {
+      this.logger.log("debug", ...args);
+    },
+    info: (...args: any[]) => {
+      this.logger.log("info", ...args);
+    },
+    warn: (...args: any[]) => {
+      this.logger.log("warn", ...args);
+    },
+    error: (...args: any[]) => {
+      this.logger.log("error", ...args);
+    },
+  };
 }
