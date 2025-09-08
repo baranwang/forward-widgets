@@ -26,7 +26,7 @@
     "pre-commit": "npx nano-staged"
   },
   "nano-staged": {
-    "*.{md,mdx,css,less,scss,json,jsonc,json5,js,jsx,ts,tsx,mjs,mjsx,cjs,cjsx,mts,mtsx,cts,ctsx}": [
+    "*.{js,ts,mjs,cjs,mts,cts}": [
       "biome check --write"
     ],
     "pnpm-lock.yaml": "pnpm dedupe --check"
