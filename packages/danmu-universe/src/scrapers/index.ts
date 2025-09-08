@@ -1,4 +1,5 @@
 import { isEqual, keyBy, sortBy, uniqWith } from "es-toolkit";
+import { searchVideoPlatformInfoWith360kan } from "../libs/360kan/search";
 import { MediaType } from "../libs/constants";
 import { getVideoPlatformInfoByDoubanId } from "../libs/douban";
 import type {
@@ -18,6 +19,12 @@ import { YoukuScraper } from "./youku";
 
 const scrapers = [TencentScraper, YoukuScraper, IqiyiScraper, BilibiliScraper, RenRenScraper, MgTVScraper];
 
+export type GetEpisodeParam = {
+  provider: string;
+  idString: string;
+  episodeNumber?: number;
+};
+
 export class Scraper {
   private scrapers: BaseScraper[] = [];
 
@@ -28,7 +35,15 @@ export class Scraper {
   }
 
   get scraperMap() {
-    return keyBy(this.scrapers, (scraper) => scraper.providerName);
+    return keyBy(this.scrapers, (scraper) => scraper.providerName) as {
+      tencent: TencentScraper;
+      youku: YoukuScraper;
+      iqiyi: IqiyiScraper;
+      bilibili: BilibiliScraper;
+      renren: RenRenScraper;
+      mgtv: MgTVScraper;
+      [key: string]: BaseScraper;
+    };
   }
 
   private async getSegmentsByProvider(provider: string, idString: string): Promise<ProviderSegmentInfo[]> {
@@ -122,7 +137,7 @@ export class Scraper {
     return this.getSegmentWithTime(segmentTime, ...items);
   }
 
-  private async getEpisodes(...args: { provider: string; idString: string; episodeNumber?: number }[]) {
+  private async getEpisodes(...args: GetEpisodeParam[]) {
     const tasks: Promise<ProviderEpisodeInfo[]>[] = [];
     for (const { provider, idString, episodeNumber } of args) {
       const scraper = this.scraperMap[provider];
@@ -162,7 +177,7 @@ export class Scraper {
   async getDetailWithDoubanIds(doubanIds: string[], mediaType: MediaType, episode?: string) {
     const responses = await Promise.all(doubanIds.map((id) => getVideoPlatformInfoByDoubanId(id).catch(() => null)));
     const episodeNumber = this.getEpisodeNumber(mediaType, episode);
-    const options: Parameters<typeof this.getEpisodes> = [];
+    const options: GetEpisodeParam[] = [];
 
     for (const response of responses) {
       if (!response) continue;
@@ -195,13 +210,19 @@ export class Scraper {
     if (!dramas.length) return [];
 
     const episodeNumber = this.getEpisodeNumber(searchParams.type as MediaType, searchParams.episode);
-    const options: Parameters<typeof this.getEpisodes> = [];
+    const options: GetEpisodeParam[] = [];
     for (const drama of dramas) {
       const scraper = this.scraperMap[drama.provider];
       if (!scraper) continue;
       const idString = scraper.generateIdString({ dramaId: drama.dramaId });
       options.push({ provider: drama.provider, idString, episodeNumber });
     }
+
+    if (searchParams.qihooSearch === "true") {
+      const searchOptions = await searchVideoPlatformInfoWith360kan(searchParams);
+      options.push(...searchOptions);
+    }
+
     return this.getEpisodes(...uniqWith(options, isEqual));
   }
 
@@ -214,3 +235,5 @@ export class Scraper {
     }
   }
 }
+
+export const scraper = new Scraper();

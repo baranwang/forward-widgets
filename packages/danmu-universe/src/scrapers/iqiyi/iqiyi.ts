@@ -190,7 +190,7 @@ export class IqiyiScraper extends BaseScraper<typeof iqiyiIdSchema> {
   }
 
   /**将视频ID (v_...中的部分) 转换为entity_id */
-  private videoIdToEntityId(videoId: string): string | null {
+  videoIdToEntityId(videoId: string): string | null {
     try {
       const base36Decoded = parseInt(videoId, 36);
       const xorResult = BigInt(base36Decoded) ^ BigInt(0x75706971676c);

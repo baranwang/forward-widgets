@@ -1,7 +1,7 @@
 import { EMPTY_ANIME_CONFIG, type MediaType, PROVIDER_NAMES } from "./libs/constants";
 import { getDoubanIds } from "./libs/douban";
 import { z } from "./libs/zod";
-import { Scraper } from "./scrapers";
+import { scraper } from "./scrapers";
 
 if (import.meta.rstest) {
   Object.defineProperty(globalThis, "WidgetMetadata", {
@@ -63,6 +63,23 @@ WidgetMetadata = {
         {
           title: "始终关闭",
           value: "never",
+        },
+      ],
+    },
+    {
+      title: "360 影视搜索（实验性）",
+      name: "qihooSearch",
+      description: "是否开启 360 影视搜索",
+      value: "false",
+      type: "enumeration",
+      enumOptions: [
+        {
+          title: "开启",
+          value: "true",
+        },
+        {
+          title: "关闭",
+          value: "false",
         },
       ],
     },
@@ -132,8 +149,6 @@ WidgetMetadata = {
     },
   ],
 };
-
-const scraper = new Scraper();
 
 searchDanmu = async (params) => {
   scraper.setProviderConfig(params);

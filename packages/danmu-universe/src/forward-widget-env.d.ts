@@ -8,6 +8,12 @@ namespace BaranwangDanmuUniverse {
          */
         fuzzyMatch: 'auto' | 'always' | 'never';
         /**
+         * 360 影视搜索（实验性）
+         * @description 是否开启 360 影视搜索
+         * @default 'false'
+         */
+        qihooSearch: 'true' | 'false';
+        /**
          * 未匹配到资源提示
          * @description 是否显示未匹配到资源提示
          * @default 'true'

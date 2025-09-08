@@ -29,6 +29,7 @@ export const searchDanmuParamsSchema = z.object({
   airDate: z.coerce.string().optional(),
   episode: z.coerce.number().optional(),
   fuzzyMatch: z.enum(["always", "never", "auto"]).catch("auto").optional().default("auto"),
+  qihooSearch: z.stringbool().catch(false).optional().default(false),
 });
 
 export const EMPTY_ANIME_CONFIG = {
