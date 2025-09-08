@@ -26,8 +26,8 @@
     "zod": "4.0.17"
   },
   "devDependencies": {
-    "@forward-widget/libs": "1.9.0",
-    "@forward-widget/rslib-plugin": "1.9.0",
+    "@forward-widget/libs": "2.0.0",
+    "@forward-widget/rslib-plugin": "2.0.0",
     "@rsdoctor/rspack-plugin": "^1.2.3",
     "@rslib/core": "^0.12.4",
     "@rstest/core": "^0.3.1",

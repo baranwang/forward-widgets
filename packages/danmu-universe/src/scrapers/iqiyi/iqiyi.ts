@@ -19,7 +19,7 @@ export class IqiyiScraper extends BaseScraper<typeof iqiyiIdSchema> {
 
   protected idSchema = iqiyiIdSchema;
 
-  protected PROVIDER_SPECIFIC_BLACKLIST_DEFAULT =
+  protected PROVIDER_SPECIFIC_BLACKLIST =
     "^(.*?)(抢先(版|篇)?|加更(版|篇)?|花絮|预告|特辑|彩蛋|专访|幕后(故事|花絮)?|直播|纯享|未播|衍生|番外|会员(专属|加长)?|片花|精华|看点|速览|解读|reaction|影评)(.*?)$";
 
   constructor() {
@@ -53,7 +53,10 @@ export class IqiyiScraper extends BaseScraper<typeof iqiyiIdSchema> {
       // TODO: 回退到旧版API
       // this.logger.warn("新版API (v3) 未返回分集或失败，正在回退到旧版API...");
     }
-    return this.filterAndFinalizeEpisodes(providerEpisodes, episodeNumber);
+    if (episodeNumber) {
+      return providerEpisodes.filter((ep) => ep.episodeNumber === episodeNumber);
+    }
+    return providerEpisodes;
   }
 
   async getSegments(episodeId: string) {
@@ -152,7 +155,7 @@ export class IqiyiScraper extends BaseScraper<typeof iqiyiIdSchema> {
           this.logger.warn("解析分集列表数据时发生错误：", z.prettifyError(error), tab);
           return [];
         }
-        const blacklistPattern = this.getEpisodeBlacklistPattern();
+
         let episodeIndex = 1;
         for (const ep of data) {
           /**
@@ -165,7 +168,7 @@ export class IqiyiScraper extends BaseScraper<typeof iqiyiIdSchema> {
           if (!entityId) {
             continue;
           }
-          if (blacklistPattern?.test(ep.title)) {
+          if (this.episodeBlacklistPattern.test(ep.title)) {
             continue;
           }
           episodes.push({
@@ -211,24 +214,6 @@ export class IqiyiScraper extends BaseScraper<typeof iqiyiIdSchema> {
       .map((key) => `${key}=${params[key] ?? ""}`)
       .join("&");
     return MD5(`${paramString}&secret_key=howcuteitis`).toString().toUpperCase();
-  }
-
-  /**对分集列表应用黑名单过滤并返回最终结果 */
-  private filterAndFinalizeEpisodes(episodes: ProviderEpisodeInfo[], targetEpisodeIndex?: number) {
-    // 统一过滤逻辑
-    const blacklistPattern = this.getEpisodeBlacklistPattern();
-    if (blacklistPattern) {
-      const originalCount = episodes.length;
-      episodes = episodes.filter((ep) => !blacklistPattern.test(ep.episodeTitle));
-      if (originalCount > episodes.length) {
-        this.logger.info("根据黑名单规则过滤掉了", originalCount - episodes.length, "个分集。");
-      }
-    }
-
-    if (targetEpisodeIndex) {
-      return episodes.filter((ep) => ep.episodeNumber === targetEpisodeIndex);
-    }
-    return episodes;
   }
 
   private async getVideoBaseInfo(entityId: string) {

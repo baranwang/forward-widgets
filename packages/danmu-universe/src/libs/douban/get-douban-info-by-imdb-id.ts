@@ -6,27 +6,7 @@ import { DOUBAN_API_KEY } from "./constants";
 
 const doubanImdbResponseSchema = z.object({
   id: z.string(),
-  rating: z
-    .object({
-      min: z.number(),
-      max: z.number(),
-      average: z.string(),
-    })
-    .optional(),
   title: z.string().optional(),
-  alt_title: z.string().optional(),
-  image: z.string().optional(),
-  summary: z.string().optional(),
-  attrs: z.record(z.string(), z.array(z.string())).optional(),
-  mobile_link: z.string().optional(),
-  tags: z
-    .array(
-      z.object({
-        count: z.number().optional(),
-        name: z.string().optional(),
-      }),
-    )
-    .optional(),
 });
 
 /**

@@ -24,7 +24,6 @@ export class BilibiliScraper extends BaseScraper<typeof bilibiliIdSchema> {
     }
     const results: ProviderEpisodeInfo[] = [];
     const episodes = await this.getPgcEpisodes(bilibiliId.seasonId);
-    const blacklistPattern = this.getEpisodeBlacklistPattern();
 
     let episodeIndex = 1;
     for (const item of episodes ?? []) {
@@ -32,7 +31,7 @@ export class BilibiliScraper extends BaseScraper<typeof bilibiliIdSchema> {
         this.logger.warn("预告，跳过，title：", item.title);
         continue;
       }
-      if (blacklistPattern?.test(item.title)) {
+      if (this.episodeBlacklistPattern.test(item.title)) {
         this.logger.warn("黑名单，跳过，title：", item.title);
         continue;
       }

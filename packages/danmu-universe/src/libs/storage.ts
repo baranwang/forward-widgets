@@ -24,8 +24,8 @@ const StorageValue = z.object({
 class Storage {
   private readonly defaultTTL = TTL_5_MINUTES;
 
-  get(key: string) {
-    const value = Widget.storage.get(key);
+  async get(key: string) {
+    const value = await Widget.storage.get(key);
     if (!value) return null;
     const result = safeJsonParseWithZod(value, StorageValue);
     if (!result) {
@@ -59,8 +59,8 @@ class Storage {
     return Widget.storage.clear();
   }
 
-  getJson<T = unknown>(key: string) {
-    const value = this.get(key);
+  async getJson<T = unknown>(key: string) {
+    const value = await this.get(key);
     if (!value) return null;
     return safeJsonParse<T>(value);
   }

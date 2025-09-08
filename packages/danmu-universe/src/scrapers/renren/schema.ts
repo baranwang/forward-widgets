@@ -8,8 +8,7 @@ import { DEFAULT_COLOR_INT, MediaType } from "../../libs/constants";
 import { safeJsonParseWithZod } from "../../libs/utils";
 import { z } from "../../libs/zod";
 import { providerCommentItemSchema } from "../base";
-
-const AES_KEY = "3b744389882a4067";
+import { getEpisodeBlacklistPattern } from "../blacklist";
 
 export const renrenIdSchema = z.object({
   dramaId: z.coerce.number(),
@@ -18,6 +17,7 @@ export const renrenIdSchema = z.object({
 
 export type RenRenId = z.infer<typeof renrenIdSchema>;
 
+const AES_KEY = "3b744389882a4067";
 export const aesResponeSchema = z.string().transform((v) => {
   const raw = Base64.parse(v);
   const decrypted = AES.decrypt({ ciphertext: raw } as CryptoJS.lib.CipherParams, Utf8.parse(AES_KEY), {
@@ -59,6 +59,8 @@ export const renrenSearchResponseSchema = z.object({
     .transform((v) => compact(v)),
 });
 
+const episodeBlacklistPattern = getEpisodeBlacklistPattern();
+
 export const renrenDramaInfoResponseSchema = z.object({
   dramaInfo: z
     .object({
@@ -77,7 +79,10 @@ export const renrenDramaInfoResponseSchema = z.object({
               id: z.coerce.number(),
               episodeNo: z.coerce.number(),
               text: z.string().optional(),
-              title: z.string().optional(),
+              title: z
+                .string()
+                .refine((v) => !episodeBlacklistPattern.test(v))
+                .optional(),
             })
             .safeParse(v).data ?? null,
       ),
