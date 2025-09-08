@@ -3,6 +3,7 @@ import { DEFAULT_COLOR_HEX, DEFAULT_COLOR_INT } from "../../libs/constants";
 import { safeJsonParseWithZod } from "../../libs/utils";
 import { z } from "../../libs/zod";
 import { CommentMode, providerCommentItemSchema } from "../base";
+import { getEpisodeBlacklistPattern } from "../blacklist";
 
 export const tencentIdSchema = z.object({
   cid: z.string(),
@@ -11,24 +12,85 @@ export const tencentIdSchema = z.object({
 
 export type TencentId = z.infer<typeof tencentIdSchema>;
 
+const episodeBlacklistPattern = getEpisodeBlacklistPattern(
+  [
+    "拍摄花絮",
+    "制作花絮",
+    "幕后花絮",
+    "未播花絮",
+    "独家花絮",
+    "花絮特辑",
+    "预告片",
+    "先导预告",
+    "终极预告",
+    "正式预告",
+    "官方预告",
+    "彩蛋片段",
+    "删减片段",
+    "未播片段",
+    "番外彩蛋",
+    "精彩片段",
+    "精彩看点",
+    "精彩回顾",
+    "精彩集锦",
+    "看点解析",
+    "看点预告",
+    "NG镜头",
+    "NG花絮",
+    "番外篇",
+    "番外特辑",
+    "制作特辑",
+    "拍摄特辑",
+    "幕后特辑",
+    "导演特辑",
+    "演员特辑",
+    "片尾曲",
+    "插曲",
+    "主题曲",
+    "背景音乐",
+    "OST",
+    "音乐MV",
+    "歌曲MV",
+    "前季回顾",
+    "剧情回顾",
+    "往期回顾",
+    "内容总结",
+    "剧情盘点",
+    "精选合集",
+    "剪辑合集",
+    "混剪视频",
+    "独家专访",
+    "演员访谈",
+    "导演访谈",
+    "主创访谈",
+    "媒体采访",
+    "发布会采访",
+    "抢先看",
+    "抢先版",
+    "试看版",
+    "短剧",
+    "vlog",
+    "纯享",
+    "加更",
+    "reaction",
+    "精编",
+    "会员版",
+    "Plus",
+    "独家版",
+    "特别版",
+    "短片",
+    "合唱",
+  ].join("|"),
+);
+
 const tencentEpisodeSchema = z.object({
   vid: z.string().refine((val) => !!val),
   is_trailer: z.string().refine((val) => val !== "1"),
-  title: z.string().refine((val) => {
-    const junkKeywords = ["预告", "彩蛋", "直拍", "直播回顾", "加更", "走心", "解忧", "纯享", "节点", "采访", "花絮"];
-    for (const keyword of junkKeywords) {
-      if (val.includes(keyword)) {
-        return false;
-      }
-    }
-    return true;
-  }),
-  union_title: z.optional(z.string()).refine((val) => {
-    if (val?.includes("预告")) {
-      return false;
-    }
-    return true;
-  }),
+  title: z.string().refine((val) => !episodeBlacklistPattern.test(val)),
+  union_title: z
+    .string()
+    .refine((val) => !episodeBlacklistPattern.test(val))
+    .optional(),
 });
 
 export const tencentEpisodeResultSchema = z

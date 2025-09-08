@@ -14,5 +14,5 @@
   "[jsonc]": {
     "editor.defaultFormatter": "biomejs.biome"
   },
-  "cSpell.words": ["danmu", "imdb", "tmdb", "douban", "iqiyi", "bilibili", "youku"]
+  "cSpell.words": ["danmu", "imdb", "tmdb", "douban", "iqiyi", "bilibili", "youku", "renren"]
 }

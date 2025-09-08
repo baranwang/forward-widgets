@@ -8,10 +8,12 @@ export interface RequestOptions<T extends z.ZodType | undefined = undefined>
   extends Omit<BaseRequestOptions, "params"> {
   params?: Record<string, any>;
   timeout?: number;
-  cache?: {
-    cacheKey?: string;
-    ttl?: number;
-  };
+  cache?:
+    | string
+    | {
+        cacheKey?: string;
+        ttl?: number;
+      };
   successStatus?: number[];
   schema?: T;
 }
@@ -156,20 +158,25 @@ export class Fetch {
   /**
    * 统一执行请求的核心逻辑
    */
-  private executeRequest<T>(
+  private async executeRequest<T>(
     method: "GET" | "POST",
     url: string,
     bodyOrOptions?: unknown | RequestOptions,
     options?: RequestOptions,
-  ): Promise<HttpResponse<T>> {
+  ): Promise<HttpResponse<T> & { fromCache?: boolean }> {
     const isGet = method === "GET";
     const requestOptions: RequestOptions = ((isGet ? bodyOrOptions : options) as RequestOptions) ?? {};
-    if (requestOptions.cache) {
-      const cacheKey = this.getCacheKey({ method, url }, requestOptions);
-      const cached = storage.getJson<HttpResponse<T>>(cacheKey);
+    const cacheConfig = this.getCacheConfig(requestOptions);
+    if (cacheConfig?.cacheKey) {
+      const cached = await storage.getJson<T>(cacheConfig.cacheKey);
       if (cached) {
-        console.debug("fetch cache hit", cacheKey);
-        return Promise.resolve(cached);
+        console.debug("♻️ fetch cache hit", cacheConfig.cacheKey);
+        return {
+          data: cached,
+          statusCode: 200,
+          headers: {},
+          fromCache: true,
+        };
       }
     }
 
@@ -195,19 +202,22 @@ export class Fetch {
   }
 
   private handleResponse = <T>(
-    response: HttpResponse<T>,
+    response: HttpResponse<T> & { fromCache?: boolean },
     context: RequestContext,
     options?: RequestOptions,
   ): Promise<HttpResponse<T>> | HttpResponse<T> => {
+    if (response.fromCache) {
+      return response;
+    }
+
     if (options?.successStatus?.length && !options.successStatus.includes(response.statusCode)) {
       throw new HttpStatusError(response.statusCode, options.successStatus, context, response);
     }
-    const originalResponse = { ...response };
 
     if (options?.schema) {
       const result = (options.schema as z.ZodType).safeParse(response.data);
       if (!result.success) {
-        throw new HttpSchemaError(context, originalResponse, result.error);
+        throw new HttpSchemaError(context, response, result.error);
       }
       response.data = result.data as T;
     }
@@ -233,19 +243,21 @@ export class Fetch {
       this.setCookie(newCookies);
     }
 
-    if (options?.cache) {
-      const cacheKey = this.getCacheKey(context, options);
-      storage.setJson(cacheKey, originalResponse, { ttl: options.cache.ttl });
+    const cacheConfig = this.getCacheConfig(options);
+    if (cacheConfig?.cacheKey) {
+      storage.setJson(cacheConfig.cacheKey, response.data, { ttl: cacheConfig.ttl });
     }
     return response;
   };
 
-  private getCacheKey(context: RequestContext, options?: RequestOptions) {
-    let cacheKey = options?.cache?.cacheKey;
-    if (!cacheKey) {
-      cacheKey = `${context.method}#${context.url}`;
+  private getCacheConfig(options?: RequestOptions) {
+    if (typeof options?.cache === "string") {
+      return {
+        cacheKey: options.cache,
+        ttl: undefined,
+      };
     }
-    return cacheKey;
+    return options?.cache;
   }
 }
 
