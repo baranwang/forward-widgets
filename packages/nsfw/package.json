@@ -1,6 +1,6 @@
 {
   "name": "@forward-widget/nsfw",
-  "version": "0.10.0",
+  "version": "0.10.1",
   "type": "module",
   "exports": {
     "./91porn": "./dist/91porn.js",

@@ -1,5 +1,11 @@
 # @forward-widget/nsfw
 
+## 0.10.1
+
+### Patch Changes
+
+- b9c72b6: 修复模块导出
+
 ## 0.10.0
 
 ### Minor Changes
