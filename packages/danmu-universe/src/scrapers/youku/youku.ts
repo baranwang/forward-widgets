@@ -1,7 +1,6 @@
 import Base64 from "crypto-js/enc-base64";
 import Utf8 from "crypto-js/enc-utf8";
 import MD5 from "crypto-js/md5";
-import { qs } from "url-parse";
 import { safeJsonParseWithZod } from "../../libs/utils";
 import { z } from "../../libs/zod";
 import { BaseScraper, type ProviderEpisodeInfo } from "../base";
@@ -221,34 +220,31 @@ export class YoukuScraper extends BaseScraper<typeof youkuIdSchema> {
     const t = Date.now().toString();
 
     try {
-      const response = await this.fetch.post(
-        "https://acs.youku.com/h5/mopen.youku.danmu.list/1.0/",
-        qs.stringify({ data: dataPayload }),
-        {
-          params: {
-            jsv: "2.7.0",
-            appKey: appKey,
-            t,
-            sign: this.generateTokenSign(t, appKey, dataPayload),
-            api: "mopen.youku.danmu.list",
-            v: "1.0",
-            type: "originaljson",
-            dataType: "jsonp",
-            timeout: "20000",
-            jsonpIncPrefix: "utility",
-          },
-          headers: { Referer: "https://v.youku.com", "Content-Type": "application/x-www-form-urlencoded" },
-          successStatus: [200],
-          schema: z.looseObject({
-            data: z.object({
-              result: z
-                .string()
-                .transform((v) => safeJsonParseWithZod(v, youkuDanmuResultSchema))
-                .optional(),
-            }),
-          }),
+      const response = await this.fetch.get("https://acs.youku.com/h5/mopen.youku.danmu.list/1.0/", {
+        params: {
+          jsv: "2.7.0",
+          appKey: appKey,
+          t,
+          sign: this.generateTokenSign(t, appKey, dataPayload),
+          api: "mopen.youku.danmu.list",
+          v: "1.0",
+          type: "originaljson",
+          dataType: "jsonp",
+          timeout: "20000",
+          jsonpIncPrefix: "utility",
+          data: dataPayload,
         },
-      );
+        headers: { Referer: "https://v.youku.com" },
+        successStatus: [200],
+        schema: z.looseObject({
+          data: z.object({
+            result: z
+              .string()
+              .transform((v) => safeJsonParseWithZod(v, youkuDanmuResultSchema))
+              .optional(),
+          }),
+        }),
+      });
 
       const result = response.data?.data.result?.data.result ?? [];
       this.logger.info("获取到分段", mat, "的弹幕", result.length, "条");
@@ -306,7 +302,7 @@ if (import.meta.rstest) {
   test("youku", async () => {
     const scraper = new YoukuScraper();
 
-    const episodes = await scraper.getEpisodes(scraper.generateIdString({ showId: "eaea48e7a4c746c7b62b" }));
+    const episodes = await scraper.getEpisodes(scraper.generateIdString({ showId: "adffc358fe204c07b2d2" }));
     expect(episodes).toBeDefined();
     expect(episodes.length).toBeGreaterThan(0);
     scraper.logger.info("episodes：", episodes);
