@@ -125,9 +125,9 @@ export class MgTVScraper extends BaseScraper<typeof mgtvIdSchema> {
       return [];
     }
 
-    return Array.from({ length: Math.ceil(ep.time / 3600) }, (_, i) => ({
+    return Array.from({ length: Math.ceil(ep.time / 60) }, (_, i) => ({
       provider: this.providerName,
-      startTime: i * 3600,
+      startTime: i * 60,
       segmentId: i.toString(),
     }));
   }
