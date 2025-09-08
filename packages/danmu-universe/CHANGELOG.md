@@ -1,5 +1,11 @@
 # @forward-widget/danmu-universe
 
+## 0.5.1
+
+### Patch Changes
+
+- 7c2bba8: 修复优酷在 1.3.7 之后的版本请求加载错误的问题
+
 ## 0.5.0
 
 ### Minor Changes
