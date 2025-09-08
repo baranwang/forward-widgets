@@ -1,5 +1,11 @@
 # @forward-widget/danmu-universe
 
+## 0.6.0
+
+### Minor Changes
+
+- a93cc6c: 增加芒果 TV 视频搜索能力
+
 ## 0.5.1
 
 ### Patch Changes
