@@ -16,6 +16,7 @@
   },
   "dependencies": {
     "crypto-js": "^4.2.0",
+    "date-fns": "^4.1.0",
     "es-toolkit": "^1.39.9",
     "fast-xml-parser": "^5.2.5",
     "protobufjs": "^7.5.4",

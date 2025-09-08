@@ -37,7 +37,7 @@ const widgetVersion = (() => {
 })();
 
 WidgetMetadata = {
-  id: process.env.NODE_ENV === "production" ? "baranwang.danmu.universe" : "baranwang.danmu.universe.test",
+  id: "baranwang.danmu.universe",
   title: process.env.NODE_ENV === "production" ? "通用弹幕" : "通用弹幕 (测试)",
   description: "通用弹幕插件，支持腾讯、优酷、爱奇艺、哔哩哔哩、人人视频等平台",
   author: "Baran",
@@ -220,13 +220,12 @@ if (import.meta.rstest) {
   test.only("searchDanmu", async () => {
     // const danmu = await searchDanmu({ tmdbId: "1139695", type: "movie" } as SearchDanmuParams);
     const danmu = await searchDanmu({
-      // tmdbId: "119051",
-      seriesName: "星期三",
+      tmdbId: "243083",
+      seriesName: "国色芳华",
       type: "tv",
       season: "2",
-      episode: "4",
+      episode: "24",
     } as SearchDanmuParams);
-    console.log(danmu);
     expect(danmu).toBeDefined();
     expect(danmu?.animes.length).toBeGreaterThan(0);
   });

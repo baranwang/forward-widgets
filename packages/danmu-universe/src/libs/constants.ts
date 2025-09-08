@@ -14,6 +14,7 @@ export const PROVIDER_NAMES = {
   youku: "优酷视频",
   bilibili: "哔哩哔哩",
   renren: "人人视频",
+  mgtv: "芒果 TV",
 };
 
 export const searchDanmuParamsSchema = z.object({
@@ -25,6 +26,7 @@ export const searchDanmuParamsSchema = z.object({
   title: z.coerce.string().optional(),
   seriesName: z.coerce.string().optional(),
   season: z.coerce.number().optional(),
+  airDate: z.coerce.string().optional(),
   episode: z.coerce.number().optional(),
   fuzzyMatch: z.enum(["always", "never", "auto"]).catch("auto").optional().default("auto"),
 });

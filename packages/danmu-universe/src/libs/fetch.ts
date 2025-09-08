@@ -56,6 +56,7 @@ class HttpSchemaError extends Error {
     console.error(
       `🚫 HTTP Request Failed Failed to parse response with schema: ${z.prettifyError(error)}: ${context.method} ${context.url}`,
     );
+    if (context.options) console.error("Request Options:", omit(context.options, ["schema", "successStatus"]));
     console.error("Response:", { headers: response.headers, data: response.data });
   }
 }

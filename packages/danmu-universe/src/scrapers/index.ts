@@ -10,12 +10,13 @@ import type {
 } from "./base";
 import { BilibiliScraper } from "./bilibili";
 import { IqiyiScraper } from "./iqiyi";
+import { MgTVScraper } from "./mgtv";
 import { providerConfigSchema } from "./provider-config";
 import { RenRenScraper } from "./renren";
 import { TencentScraper } from "./tencent";
 import { YoukuScraper } from "./youku";
 
-const scrapers = [TencentScraper, YoukuScraper, IqiyiScraper, BilibiliScraper, RenRenScraper];
+const scrapers = [TencentScraper, YoukuScraper, IqiyiScraper, BilibiliScraper, RenRenScraper, MgTVScraper];
 
 export class Scraper {
   private scrapers: BaseScraper[] = [];
@@ -204,7 +205,7 @@ export class Scraper {
     return this.getEpisodes(...uniqWith(options, isEqual));
   }
 
-  setProviderConfig(params: GlobalParams) {
+  setProviderConfig(params: BaranwangDanmuUniverse.GlobalParams) {
     const { success, data } = providerConfigSchema.safeParse(params);
     if (success) {
       this.scrapers.forEach((scraper) => {

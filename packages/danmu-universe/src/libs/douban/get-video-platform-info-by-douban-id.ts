@@ -101,7 +101,8 @@ if (import.meta.rstest) {
   const { test, describe, expect } = import.meta.rstest;
 
   test("getVideoPlatformInfoByDoubanId", async () => {
-    // const response = await getVideoPlatformInfoByDoubanId("34780991");
+    const response = await getVideoPlatformInfoByDoubanId("36172040");
+    console.log(response);
     // expect(response).toBeDefined();
     // expect(response.providers).toHaveProperty("tencent", { id: "mzc00200tjkzeps" });
     // expect(response.providers).toHaveProperty("youku", { id: "cdee9099d49b4137918b" });
