@@ -1,5 +1,12 @@
 # @forward-widget/danmu-universe
 
+## 0.5.0
+
+### Minor Changes
+
+- 5746cb7: 优化缓存策略
+- 5746cb7: 优化黑名单过滤逻辑
+
 ## 0.4.0
 
 ### Minor Changes
