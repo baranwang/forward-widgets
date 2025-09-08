@@ -1,5 +1,11 @@
 # @forward-widget/danmu-universe
 
+## 0.7.0
+
+### Minor Changes
+
+- 4c71476: 新增 360 影视搜索功能（实验性）
+
 ## 0.6.1
 
 ### Patch Changes
