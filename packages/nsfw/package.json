@@ -3,10 +3,8 @@
   "version": "0.10.0",
   "type": "module",
   "exports": {
-    ".": {
-      "types": "./dist/index.d.ts",
-      "import": "./dist/index.js"
-    }
+    "./91porn": "./dist/91porn.js",
+    "./xvideos": "./dist/xvideos.js"
   },
   "types": "./dist/index.d.ts",
   "files": [
@@ -25,5 +23,14 @@
   },
   "dependencies": {
     "es-toolkit": "^1.39.9"
-  }
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/baranwang/forward-widgets.git",
+    "directory": "packages/nsfw"
+  },
+  "publishConfig": {
+    "provenance": true
+  },
+  "license": "MIT"
 }

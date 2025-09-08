@@ -7,6 +7,7 @@
     "lint": "turbo run lint",
     "deps:check": "manypkg check",
     "deps:fix": "manypkg fix",
+    "change": "changeset",
     "version": "changeset version",
     "postversion": "npm run build",
     "prerelease": "npm run build",

@@ -12,10 +12,7 @@
   "scripts": {
     "build": "NODE_ENV=production rslib build",
     "dev": "NODE_ENV=development rslib build --watch",
-    "test": "rstest",
-    "pb": "pnpm pbjs && pnpm pbts",
-    "pbjs": "pbjs -t static-module -w es6 -o src/scrapers/bilibili/dm.proto.js src/scrapers/bilibili/dm.proto",
-    "pbts": "pbts -o src/scrapers/bilibili/dm.proto.d.ts src/scrapers/bilibili/dm.proto.js"
+    "test": "rstest"
   },
   "dependencies": {
     "crypto-js": "^4.2.0",
