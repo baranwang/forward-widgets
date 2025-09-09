@@ -28,7 +28,7 @@ const iqiyiEpisodeTabDataVideoSchema = z
 const safeParseVideo = (data: unknown) => {
   const result = iqiyiEpisodeTabDataVideoSchema.safeParse(data);
   if (!result.success) {
-    console.warn("爱奇艺: 解析分集数据不符合预期，跳过:", z.prettifyError(result.error), data);
+    // console.warn("爱奇艺: 解析分集数据不符合预期，跳过:", z.prettifyError(result.error), data);
     return null;
   }
   return result.data;
@@ -38,28 +38,34 @@ const iqiyiTvTabSchema = z.object({
   bk_id: z.literal("selector_bk"),
   bk_type: z.literal("album_episodes"),
   data: z.object({
-    data: z.array(z.unknown()).transform((v) => {
-      const { success, data: parsedData } = z
-        .object({
-          videos: z.object({
-            feature_paged: z.record(z.any(), z.array(z.unknown())),
-          }),
-        })
-        .safeParse(v);
-      if (!success) {
-        return [];
-      }
-      const output: z.infer<typeof iqiyiEpisodeTabDataVideoSchema>[] = [];
-      for (const value of Object.values(parsedData?.videos?.feature_paged ?? {})) {
-        for (const item of value) {
-          const data = safeParseVideo(item);
-          if (data) {
-            output.push(data);
+    data: z
+      .array(
+        z.unknown().transform(
+          (v) =>
+            z
+              .object({
+                videos: z.object({
+                  feature_paged: z.record(z.any(), z.array(z.unknown())),
+                }),
+              })
+              .safeParse(v).data ?? null,
+        ),
+      )
+      .transform((v) => {
+        const output: z.infer<typeof iqiyiEpisodeTabDataVideoSchema>[] = [];
+        for (const rows of v) {
+          if (!rows) continue;
+          for (const value of Object.values(rows.videos?.feature_paged ?? {})) {
+            for (const item of value) {
+              const data = safeParseVideo(item);
+              if (data) {
+                output.push(data);
+              }
+            }
           }
         }
-      }
-      return output;
-    }),
+        return output;
+      }),
   }),
 });
 

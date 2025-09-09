@@ -63,9 +63,13 @@ export const providerCommentItemSchema = z.object({
 export type ProviderCommentItem = z.infer<typeof providerCommentItemSchema>;
 
 export abstract class BaseScraper<IDType extends z.ZodType = any> {
-  public providerName!: string;
+  public providerName = "base";
 
-  protected logger = new Logger(this.providerName);
+  protected logger: Logger;
+
+  constructor() {
+    this.logger = new Logger(this.providerName);
+  }
 
   private _providerConfig = {} as ProviderConfig;
 

@@ -1,4 +1,4 @@
-import { keyBy, sortBy, uniqWith } from "es-toolkit";
+import { isEqual, keyBy, sortBy, uniqWith } from "es-toolkit";
 import { MediaType } from "../libs/constants";
 import { QihooMatcher } from "../matchers/360kan";
 import type {
@@ -33,16 +33,24 @@ export class Scraper {
     });
   }
 
-  get scraperMap() {
-    return keyBy(this.scrapers, (scraper) => scraper.providerName) as {
-      tencent: TencentScraper;
-      youku: YoukuScraper;
-      iqiyi: IqiyiScraper;
-      bilibili: BilibiliScraper;
-      renren: RenRenScraper;
-      mgtv: MgTVScraper;
-      [key: string]: BaseScraper;
-    };
+  /**
+   * 获取 provider 名称到 scraper 实例的映射
+   * 使用懒加载和缓存提升性能
+   */
+  private _scraperMap?: Record<string, BaseScraper>;
+
+  get scraperMap(): Record<string, BaseScraper> & {
+    tencent: TencentScraper;
+    youku: YoukuScraper;
+    iqiyi: IqiyiScraper;
+    bilibili: BilibiliScraper;
+    renren: RenRenScraper;
+    mgtv: MgTVScraper;
+  } {
+    if (!this._scraperMap) {
+      this._scraperMap = keyBy(this.scrapers, (scraper) => scraper.providerName);
+    }
+    return this._scraperMap as any;
   }
 
   private async getSegmentsByProvider(provider: string, idString: string): Promise<ProviderSegmentInfo[]> {
@@ -141,10 +149,7 @@ export class Scraper {
 
   async getEpisodes(...args: GetEpisodeParam[]) {
     const tasks: Promise<ProviderEpisodeInfo[]>[] = [];
-    for (const { provider, idString, episodeNumber } of uniqWith(
-      args,
-      (a, b) => `${a.provider}:${a.idString}` === `${b.provider}:${b.idString}`,
-    )) {
+    for (const { provider, idString, episodeNumber } of uniqWith(args, isEqual)) {
       const scraper = this.scraperMap[provider];
       if (!scraper) continue;
       tasks.push(
@@ -198,17 +203,21 @@ export class Scraper {
     const episodeNumber = this.getEpisodeNumber(searchParams.type as MediaType, searchParams.episode);
     const options: GetEpisodeParam[] = [];
     for (const drama of dramas) {
-      const scraper = this.scraperMap[drama.provider];
-      if (!scraper) continue;
-      const idString = scraper.generateIdString({ dramaId: drama.dramaId });
-      options.push({ provider: drama.provider, idString, episodeNumber });
+      try {
+        const scraper = this.scraperMap[drama.provider];
+        if (!scraper) continue;
+        const idString = scraper.generateIdString({ dramaId: drama.dramaId });
+        options.push({ provider: drama.provider, idString, episodeNumber });
+      } catch (error) {}
     }
 
-    if (searchParams.qihooSearch === "true") {
-      const qihooMatcher = new QihooMatcher();
-      const searchOptions = await qihooMatcher.getEpisodeParams(searchParams);
-      options.push(...searchOptions);
-    }
+    try {
+      if (searchParams.qihooSearch === "true") {
+        const qihooMatcher = new QihooMatcher();
+        const searchOptions = await qihooMatcher.getEpisodeParams(searchParams);
+        options.push(...searchOptions);
+      }
+    } catch (error) {}
 
     return options;
   }

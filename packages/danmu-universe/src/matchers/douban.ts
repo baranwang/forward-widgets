@@ -1,4 +1,4 @@
-import { compact, uniqBy } from "es-toolkit";
+import { compact } from "es-toolkit";
 import parseUrl from "url-parse";
 import { type MediaType, searchDanmuParamsSchema } from "../libs/constants";
 import { Fetch } from "../libs/fetch";
@@ -246,6 +246,7 @@ export class DoubanMatcher {
       const videoPlatformInfo = await this.getVideoPlatformInfoByDoubanId(doubanId);
       results.push(...videoPlatformInfo);
     }
-    return uniqBy(results, (item) => `${item.provider}:${item.idString}`);
+    console.log("results", results);
+    return results;
   }
 }

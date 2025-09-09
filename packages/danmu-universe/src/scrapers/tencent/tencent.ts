@@ -145,7 +145,6 @@ export class TencentScraper extends BaseScraper<typeof tencentIdSchema> {
     if (!response.data) {
       return [];
     }
-    console.log("response.data", response.data);
     return response.data.map((item) => {
       const title = item.union_title && item.union_title !== item.title ? item.union_title : item.title;
       return {
@@ -190,7 +189,7 @@ if (import.meta.rstest) {
   test("tencent", async () => {
     const scraper = new TencentScraper();
     const episodes = await scraper.getEpisodes(scraper.generateIdString({ cid: "53q0eh78q97e4d1" }), 520);
-    scraper.logger.info("episodes：", episodes);
+    console.log(episodes);
     // expect(episodes).toBeDefined();
     // expect(episodes.length).toBeGreaterThan(0);
 

@@ -4,7 +4,6 @@ import { z } from "../../libs/zod";
 import { BaseScraper, type ProviderEpisodeInfo } from "../base";
 import {
   iqiyiCommentsResponseSchema,
-  iqiyiEpisodeTabSchema,
   iqiyiIdSchema,
   iqiyiV3ApiResponseSchema,
   iqiyiVideoBaseInfoResponseSchema,
@@ -214,7 +213,7 @@ if (import.meta.rstest) {
   test("iqiyi", async () => {
     const scraper = new IqiyiScraper();
 
-    const episodes = await scraper.getEpisodes(scraper.generateIdString({ entityId: "4463752132518500" }));
+    const episodes = await scraper.getEpisodes(scraper.generateIdString({ entityId: "302725300" }));
     expect(episodes).toBeDefined();
     expect(episodes.length).toBeGreaterThan(0);
 

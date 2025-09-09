@@ -153,7 +153,7 @@ WidgetMetadata = {
 searchDanmu = async (params) => {
   scraper.setProviderConfig(params);
 
-  const { fuzzyMatch = "auto" } = params;
+  const { fuzzyMatch = "auto", type: mediaType, episode } = params;
 
   let episodesParams: GetEpisodeParam[] = [];
 
@@ -166,9 +166,22 @@ searchDanmu = async (params) => {
     episodesParams = episodesParams.concat(searchEpisodes);
   }
 
+  if (mediaType === "tv") {
+    episodesParams = episodesParams.map((item) => ({
+      ...item,
+      episodeNumber: episode ? parseInt(episode) : undefined,
+    }));
+  }
+
+  let episodes = await scraper.getEpisodes(...episodesParams);
+
+  if (mediaType === "tv" && episode) {
+    episodes = episodes.filter((item) => item.episodeNumber === parseInt(episode));
+  }
+
   const showEmptyAnimeTitle =
     process.env.NODE_ENV === "development" || z.stringbool().catch(true).parse(params.emptyAnimeTitle);
-  if (!episodesParams.length && showEmptyAnimeTitle) {
+  if (!episodes.length && showEmptyAnimeTitle) {
     return {
       animes: [
         {
@@ -178,9 +191,6 @@ searchDanmu = async (params) => {
       ],
     };
   }
-
-  const episodes = await scraper.getEpisodes(...episodesParams);
-
   return {
     animes: episodes.map((item) => {
       let animeTitle = `[${PROVIDER_NAMES[item.provider as keyof typeof PROVIDER_NAMES]}] `;
