@@ -1,5 +1,15 @@
 # @forward-widget/danmu-universe
 
+## 0.9.0
+
+### Minor Changes
+
+- a1d4626: 重构媒体匹配逻辑
+
+### Patch Changes
+
+- a1d4626: 修复爱艺奇剧集数据解析错误的问题
+
 ## 0.8.0
 
 ### Minor Changes
