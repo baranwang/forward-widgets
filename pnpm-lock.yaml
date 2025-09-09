@@ -67,8 +67,8 @@ importers:
         specifier: ^0.12.4
         version: 0.12.4(typescript@5.8.3)
       '@rstest/core':
-        specifier: ^0.3.1
-        version: 0.3.1
+        specifier: ^0.3.2
+        version: 0.3.2
       '@types/crypto-js':
         specifier: ^4.2.2
         version: 4.2.2
@@ -640,8 +640,8 @@ packages:
     resolution: {integrity: sha512-VynGOEsVw2s8TAlLf/uESfrgfrq2+rcXB1muPJYBWbsm1Oa6r5qVQhjA5ggM6z/coYPrsVMgovl3Ff7Q7OCp1w==}
     engines: {node: '>=16.0.0'}
 
-  '@rstest/core@0.3.1':
-    resolution: {integrity: sha512-bTFhWWhf84EsrSazUrpIdCJHlWvK2HfP90B+vRx6Y8K+rCaRtq6tQo3d9atjRT/ttvw+gSR1Zdy1daiqEVI8Ng==}
+  '@rstest/core@0.3.2':
+    resolution: {integrity: sha512-bb6hciMqE9S0XYerYc9gA5oJq9RvS3Kdr8/wU/K++ZQumy35A8NOJno7L7/MudyQPTqTuHzPXQjKk4mOAlsCww==}
     engines: {node: '>=18.12.0'}
     hasBin: true
     peerDependencies:
@@ -2653,7 +2653,7 @@ snapshots:
 
   '@rspack/lite-tapable@1.0.1': {}
 
-  '@rstest/core@0.3.1':
+  '@rstest/core@0.3.2':
     dependencies:
       '@rsbuild/core': 1.5.0
       '@types/chai': 5.2.2

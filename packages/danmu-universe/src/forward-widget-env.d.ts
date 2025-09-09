@@ -12,7 +12,7 @@ namespace BaranwangDanmuUniverse {
          * @description 是否开启 360 影视搜索
          * @default 'false'
          */
-        qihooSearch: 'true' | 'false';
+        qihooSearch: 'false' | 'true';
         /**
          * 未匹配到资源提示
          * @description 是否显示未匹配到资源提示

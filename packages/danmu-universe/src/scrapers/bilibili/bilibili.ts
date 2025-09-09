@@ -6,7 +6,7 @@ import { bilibiliIdSchema, pgcEpisodeResultSchema } from "./schema";
 export class BilibiliScraper extends BaseScraper<typeof bilibiliIdSchema> {
   providerName = "bilibili";
 
-  protected idSchema = bilibiliIdSchema;
+  idSchema = bilibiliIdSchema;
 
   private readonly DmSegMobileReply = biliproto.community.service.dm.v1.DmSegMobileReply;
 

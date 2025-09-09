@@ -1,8 +1,8 @@
 import { get } from "es-toolkit/compat";
+import { qs } from "url-parse";
 import { DEFAULT_COLOR_INT } from "../libs/constants";
 import { Fetch } from "../libs/fetch";
 import { Logger } from "../libs/logger";
-import { safeJsonParse } from "../libs/utils";
 import { z } from "../libs/zod";
 import { getEpisodeBlacklistPattern } from "./blacklist";
 import { parseEpNumber } from "./parse-ep-number";
@@ -65,7 +65,9 @@ export type ProviderCommentItem = z.infer<typeof providerCommentItemSchema>;
 export abstract class BaseScraper<IDType extends z.ZodType = any> {
   public providerName = "base";
 
-  protected logger: Logger;
+  public logger: Logger;
+
+  protected fetch = new Fetch();
 
   constructor() {
     this.logger = new Logger(this.providerName);
@@ -84,10 +86,10 @@ export abstract class BaseScraper<IDType extends z.ZodType = any> {
     }
   }
 
-  protected idSchema?: IDType;
+  abstract idSchema: IDType;
 
   protected parseIdString(idString: string): z.infer<IDType> | null {
-    const decodedIdString = safeJsonParse(decodeURIComponent(idString));
+    const decodedIdString = qs.parse(idString);
     const result = this.idSchema?.safeParse(decodedIdString);
     if (!result) {
       this.logger.error("parseIdString", idString, "idSchema is not defined");
@@ -100,7 +102,7 @@ export abstract class BaseScraper<IDType extends z.ZodType = any> {
     return result.data ?? null;
   }
   generateIdString(id: z.infer<IDType>) {
-    return encodeURIComponent(JSON.stringify(id));
+    return qs.stringify(this.idSchema.parse(id) as object);
   }
 
   search?(params: SearchDanmuParams): Promise<ProviderDramaInfo[]>;
@@ -110,12 +112,6 @@ export abstract class BaseScraper<IDType extends z.ZodType = any> {
   abstract getSegments(idString: string): Promise<ProviderSegmentInfo[]>;
 
   abstract getComments(idString: string, segmentId: string): Promise<Array<ProviderCommentItem | null> | null>;
-
-  protected fetch = new Fetch();
-
-  protected sleep(ms: number) {
-    return new Promise((resolve) => setTimeout(resolve, ms));
-  }
 
   protected getEpisodeIndexFromTitle(title: string): number | null {
     return parseEpNumber(title);

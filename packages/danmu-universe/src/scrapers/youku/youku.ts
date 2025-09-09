@@ -1,7 +1,7 @@
 import Base64 from "crypto-js/enc-base64";
 import Utf8 from "crypto-js/enc-utf8";
 import MD5 from "crypto-js/md5";
-import { safeJsonParseWithZod } from "../../libs/utils";
+import { safeJsonParseWithZod, sleep } from "../../libs/utils";
 import { z } from "../../libs/zod";
 import { BaseScraper, type ProviderEpisodeInfo } from "../base";
 import { youkuDanmuResultSchema, youkuEpisodeInfoSchema, youkuIdSchema, youkuVideoResultSchema } from "./schema";
@@ -9,7 +9,7 @@ import { youkuDanmuResultSchema, youkuEpisodeInfoSchema, youkuIdSchema, youkuVid
 export class YoukuScraper extends BaseScraper<typeof youkuIdSchema> {
   providerName = "youku";
 
-  protected idSchema = youkuIdSchema;
+  idSchema = youkuIdSchema;
 
   private readonly EPISODE_BLACKLIST_KEYWORDS = ["彩蛋", "加更", "走心", "解忧", "纯享"];
 
@@ -81,7 +81,7 @@ export class YoukuScraper extends BaseScraper<typeof youkuIdSchema> {
       // 步骤4：串行获取剩余页数据（避免QPS限制）
       const remainingResults = [];
       for (const page of remainingPages) {
-        await this.sleep(500); // 500ms延时避免QPS限制
+        await sleep(500); // 500ms延时避免QPS限制
         const result = await this.getEpisodesPage(showId, page, pageSize);
         remainingResults.push(result);
       }

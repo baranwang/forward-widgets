@@ -28,7 +28,7 @@
     "@forward-widget/rslib-plugin": "^2.1.0",
     "@rsdoctor/rspack-plugin": "^1.2.3",
     "@rslib/core": "^0.12.4",
-    "@rstest/core": "^0.3.1",
+    "@rstest/core": "^0.3.2",
     "@types/crypto-js": "^4.2.2",
     "@types/node": "^22.16.0",
     "@types/url-parse": "^1.4.11",

@@ -23,7 +23,7 @@ const CLIENT_VERSION = "1.0.0";
 export class RenRenScraper extends BaseScraper<typeof renrenIdSchema> {
   providerName = "renren";
 
-  protected idSchema = renrenIdSchema;
+  idSchema = renrenIdSchema;
 
   get deviceId() {
     return generateUUID().toUpperCase();

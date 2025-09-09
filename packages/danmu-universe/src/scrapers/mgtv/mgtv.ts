@@ -16,7 +16,7 @@ import {
 export class MgTVScraper extends BaseScraper<typeof mgtvIdSchema> {
   providerName = "mgtv";
 
-  protected idSchema = mgtvIdSchema;
+  idSchema = mgtvIdSchema;
 
   constructor() {
     super();
@@ -212,31 +212,4 @@ export class MgTVScraper extends BaseScraper<typeof mgtvIdSchema> {
 
     return response.data;
   }
-}
-
-if (import.meta.rstest) {
-  const { test, expect } = import.meta.rstest;
-
-  test("mgtv", async () => {
-    const scraper = new MgTVScraper();
-    const dramas = await scraper.search({ seriesName: "国色芳华", airDate: "2025-06-01" } as SearchDanmuParams);
-    console.log(dramas);
-    expect(dramas).toBeDefined();
-    expect(dramas.length).toBeGreaterThan(0);
-
-    const episodes = await scraper.getEpisodes(dramas[0].dramaId);
-    console.log(episodes);
-    expect(episodes).toBeDefined();
-    expect(episodes.length).toBeGreaterThan(0);
-
-    const segments = await scraper.getSegments(dramas[0].dramaId);
-    console.log(segments);
-    expect(segments).toBeDefined();
-    expect(segments.length).toBeGreaterThan(0);
-
-    const comments = await scraper.getComments(dramas[0].dramaId, segments[0].segmentId);
-    console.log(comments);
-    expect(comments).toBeDefined();
-    expect(comments.length).toBeGreaterThan(0);
-  });
 }

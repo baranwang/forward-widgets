@@ -14,7 +14,7 @@ const pageSize = 100;
 export class TencentScraper extends BaseScraper<typeof tencentIdSchema> {
   providerName = "tencent";
 
-  protected idSchema = tencentIdSchema;
+  idSchema = tencentIdSchema;
 
   constructor() {
     super();
@@ -181,24 +181,4 @@ export class TencentScraper extends BaseScraper<typeof tencentIdSchema> {
     }
     return [];
   }
-}
-
-if (import.meta.rstest) {
-  const { test, expect } = import.meta.rstest;
-
-  test("tencent", async () => {
-    const scraper = new TencentScraper();
-    const episodes = await scraper.getEpisodes(scraper.generateIdString({ cid: "53q0eh78q97e4d1" }), 520);
-    console.log(episodes);
-    // expect(episodes).toBeDefined();
-    // expect(episodes.length).toBeGreaterThan(0);
-
-    // const segments = await scraper.getSegments(episodes[0].episodeId);
-    // expect(segments).toBeDefined();
-    // expect(segments.length).toBeGreaterThan(0);
-
-    // const comments = await scraper.getComments(episodes[0].episodeId, segments[0].segmentId);
-    // expect(comments).toBeDefined();
-    // expect(comments.length).toBeGreaterThan(0);
-  });
 }

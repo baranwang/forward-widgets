@@ -43,3 +43,5 @@ export function generateUUID() {
     return v.toString(16);
   });
 }
+
+export const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));

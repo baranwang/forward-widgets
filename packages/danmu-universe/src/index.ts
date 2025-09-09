@@ -72,14 +72,18 @@ WidgetMetadata = {
       description: "是否开启 360 影视搜索",
       value: "false",
       type: "enumeration",
+      belongTo: {
+        paramName: "fuzzyMatch",
+        value: ["auto", "always"],
+      },
       enumOptions: [
-        {
-          title: "开启",
-          value: "true",
-        },
         {
           title: "关闭",
           value: "false",
+        },
+        {
+          title: "开启",
+          value: "true",
         },
       ],
     },
@@ -246,33 +250,41 @@ if (import.meta.rstest) {
     Widget.storage.clear();
   });
 
-  describe.only("searchDanmu", async () => {
-    test("名侦探柯南", async () => {
-      const result = await searchDanmu({
+  describe("searchDanmu", async () => {
+    test.each([
+      {
         tmdbId: "30983",
         seriesName: "名侦探柯南",
         type: "tv",
         season: "1",
         episode: "520",
-      } as SearchDanmuParams);
-      expect(result).toBeDefined();
-      expect(result?.animes.length).toBeGreaterThan(0);
-    });
-
-    test("哪吒之魔童闹海", async () => {
-      const result = await searchDanmu({
+      },
+      {
         tmdbId: "980477",
         seriesName: "哪吒之魔童闹海",
         type: "movie",
         season: "1",
         episode: "1",
-      } as SearchDanmuParams);
+      },
+      {
+        tmdbId: "243083",
+        seriesName: "国色芳华",
+        type: "tv",
+        season: "2",
+        episode: "20",
+      },
+      {
+        tmdbId: "242762",
+        seriesName: "子夜归",
+        type: "tv",
+        season: "1",
+        episode: "24",
+      },
+    ] as Partial<SearchDanmuParams>[])("$seriesName", async (params) => {
+      const result = await searchDanmu(params as SearchDanmuParams);
       expect(result).toBeDefined();
       expect(result?.animes.length).toBeGreaterThan(0);
+      console.log(params.seriesName, result?.animes);
     });
-
-    // test("庆余年", async () => {
-
-    // })
   });
 }
