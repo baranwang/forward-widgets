@@ -4,6 +4,7 @@ import { Fetch } from "../libs/fetch";
 import { safeJsonParse } from "../libs/utils";
 import { z } from "../libs/zod";
 import { getEpisodeBlacklistPattern } from "./blacklist";
+import { parseEpNumber } from "./parse-ep-number";
 import type { ProviderConfig } from "./provider-config";
 
 export interface ProviderDramaInfo {
@@ -110,21 +111,7 @@ export abstract class BaseScraper<IDType extends z.ZodType = any> {
   }
 
   protected getEpisodeIndexFromTitle(title: string): number | null {
-    if (!title) {
-      return null;
-    }
-    // 用于从标题中提取集数的正则表达式
-    const episodeIndexPattern = /(?:第)?(\d+)(?:集|话)?$/;
-    const match = episodeIndexPattern.exec(title.trim());
-    if (match) {
-      try {
-        return parseInt(match[1], 10);
-      } catch (error) {
-        this.logger.error("从标题中提取集数失败：", title, "错误：", error);
-        return null;
-      }
-    }
-    return null;
+    return parseEpNumber(title);
   }
 
   protected PROVIDER_SPECIFIC_BLACKLIST = "";

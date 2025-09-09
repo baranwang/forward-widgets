@@ -18,19 +18,17 @@ const iqiyiEpisodeTabDataVideoSchema = z
     mark_type_show: z.int().optional(),
   })
   .transform((v) => {
+    const videoId = v.page_url.match(/v_(\S+)\.html/)?.[1] ?? "";
     return {
       ...v,
-      get videoId() {
-        const match = v.page_url.match(/v_(\S+)\.html/);
-        return match?.[1] ?? "";
-      },
+      videoId,
     };
   });
 
 const safeParseVideo = (data: unknown) => {
   const result = iqiyiEpisodeTabDataVideoSchema.safeParse(data);
   if (!result.success) {
-    console.warn("爱奇艺: 解析分集数据时发生错误:", z.prettifyError(result.error), data);
+    console.warn("爱奇艺: 解析分集数据不符合预期，跳过:", z.prettifyError(result.error), data);
     return null;
   }
   return result.data;
@@ -40,26 +38,68 @@ const iqiyiTvTabSchema = z.object({
   bk_id: z.literal("selector_bk"),
   bk_type: z.literal("album_episodes"),
   data: z.object({
+    data: z.array(z.unknown()).transform((v) => {
+      const { success, data: parsedData } = z
+        .object({
+          videos: z.object({
+            feature_paged: z.record(z.any(), z.array(z.unknown())),
+          }),
+        })
+        .safeParse(v);
+      if (!success) {
+        return [];
+      }
+      const output: z.infer<typeof iqiyiEpisodeTabDataVideoSchema>[] = [];
+      for (const value of Object.values(parsedData?.videos?.feature_paged ?? {})) {
+        for (const item of value) {
+          const data = safeParseVideo(item);
+          if (data) {
+            output.push(data);
+          }
+        }
+      }
+      return output;
+    }),
+  }),
+});
+
+const iqiyiVarietyShowTabSchema = z.object({
+  bk_id: z.literal("source_selector_bk"),
+  bk_type: z.literal("video_list"),
+  data: z.object({
     data: z
       .array(
-        z.unknown().transform(
-          (v) =>
-            z
-              .object({
-                videos: z
-                  .object({
-                    feature_paged: z
-                      .record(z.any(), z.array(z.unknown().transform((v) => safeParseVideo(v))))
-                      .optional()
-                      .transform((v) => compact(Object.values(v ?? {}).flat())),
-                  })
-                  .optional(),
-              })
-              .transform((v) => v.videos?.feature_paged)
-              .safeParse(v).data,
-        ),
+        z.unknown().transform((v) => {
+          const parsed = z
+            .object({
+              videos: z.array(
+                z.unknown().transform((item) => {
+                  return (
+                    z
+                      .object({
+                        data: z.array(z.unknown()),
+                      })
+                      .safeParse(item).data ?? null
+                  );
+                }),
+              ),
+            })
+            .safeParse(v);
+
+          if (!parsed.success) return [];
+
+          const list: z.infer<typeof iqiyiEpisodeTabDataVideoSchema>[] = [];
+          for (const row of parsed.data.videos) {
+            if (!row) continue;
+            for (const item of row.data) {
+              const d = safeParseVideo(item);
+              if (d) list.push(d);
+            }
+          }
+          return list;
+        }),
       )
-      .transform((v) => compact(v.flat())),
+      .transform((rows) => rows.flat()),
   }),
 });
 
@@ -69,51 +109,47 @@ const iqiyiMovieTabSchema = z.object({
   data: z.object({
     data: z
       .object({
-        videos: z.array(z.unknown().transform((v) => safeParseVideo(v))),
+        videos: z.array(z.unknown()),
       })
-      .transform((v) => compact(v.videos)),
+      .transform((v) => compact(v.videos.map(safeParseVideo))),
   }),
 });
 
-export const iqiyiEpisodeTabSchema = z.union([iqiyiTvTabSchema, iqiyiMovieTabSchema]).transform((v) => v.data.data);
+export const iqiyiEpisodeTabSchema = z
+  .union([iqiyiTvTabSchema, iqiyiMovieTabSchema, iqiyiVarietyShowTabSchema])
+  .transform((v) => v.data.data);
 
-export const iqiyiV3ApiResponseSchema = z.object({
-  status_code: z.number(),
-  data: z
-    .object({
-      base_data: z.object({
-        video_list: z
-          .array(
+export const iqiyiV3ApiResponseSchema = z
+  .object({
+    status_code: z.number(),
+    data: z
+      .object({
+        template: z.object({
+          tabs: z.array(
             z.object({
-              tv_id: z.string(),
-              name: z.string(),
-              order: z.number(),
-              play_url: z.string(),
+              tab_id: z.string(),
+              tab_title: z.string(),
+              blocks: z.array(z.unknown()),
             }),
-          )
-          .optional(),
-      }),
-      template: z.object({
-        tabs: z.array(
-          z.object({
-            tab_id: z.string(),
-            tab_title: z.string(),
-            blocks: z.array(
-              z.object({
-                bk_id: z.string(),
-                bk_type: z.string(),
-                data: z.unknown().optional(),
-              }),
-            ),
-          }),
-        ),
-      }),
-    })
-    .optional(),
-});
+          ),
+        }),
+      })
+      .optional(),
+  })
+  .transform((v) => {
+    let result: z.infer<typeof iqiyiEpisodeTabSchema> = [];
+    for (const tab of v.data?.template.tabs ?? []) {
+      for (const block of tab.blocks) {
+        const { success, data } = iqiyiEpisodeTabSchema.safeParse(block);
+        if (success) {
+          result = result.concat(data);
+        }
+      }
+    }
+    return result;
+  });
 
 export const iqiyiVideoBaseInfoResponseSchema = z.object({
-  code: z.literal("A00000"),
   data: z.object({
     tvId: z.int(),
     albumId: z.int(),
@@ -157,7 +193,6 @@ const iqiyiCommentsEntrySchema = z.object({
 export const iqiyiCommentsResponseSchema = z
   .object({
     danmu: z.looseObject({
-      code: z.literal("A00000"),
       data: z.object({
         entry: z
           .array(z.unknown().transform((v) => iqiyiCommentsEntrySchema.safeParse(v).data?.list.bulletInfo))

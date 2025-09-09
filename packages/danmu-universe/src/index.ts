@@ -235,12 +235,13 @@ if (import.meta.rstest) {
   test.only("searchDanmu", async () => {
     // const danmu = await searchDanmu({ tmdbId: "1139695", type: "movie" } as SearchDanmuParams);
     const danmu = await searchDanmu({
-      tmdbId: "243083",
-      seriesName: "国色芳华",
+      tmdbId: "30983",
+      seriesName: "名侦探柯南",
       type: "tv",
-      season: "2",
-      episode: "24",
+      season: "1",
+      episode: "520",
     } as SearchDanmuParams);
+    console.log(danmu?.animes);
     expect(danmu).toBeDefined();
     expect(danmu?.animes.length).toBeGreaterThan(0);
   });
