@@ -49,10 +49,6 @@ export class IqiyiScraper extends BaseScraper<typeof iqiyiIdSchema> {
       this.logger.warn("新版API (v3) 获取分集时发生错误：", error);
       providerEpisodes = [];
     }
-    if (!providerEpisodes.length) {
-      // TODO: 回退到旧版API
-      // this.logger.warn("新版API (v3) 未返回分集或失败，正在回退到旧版API...");
-    }
     if (episodeNumber) {
       return providerEpisodes.filter((ep) => ep.episodeNumber === episodeNumber);
     }
@@ -134,54 +130,38 @@ export class IqiyiScraper extends BaseScraper<typeof iqiyiIdSchema> {
         schema: iqiyiV3ApiResponseSchema,
       });
 
-      const result = response.data;
-
-      const episodes: ProviderEpisodeInfo[] =
-        result?.data?.base_data?.video_list?.map((ep) => ({
-          provider: this.providerName,
-          episodeId: ep.tv_id.toString(),
-          episodeTitle: ep.name,
-          episodeNumber: ep.order,
-          url: ep.play_url,
-        })) ?? [];
-
-      if (!episodes.length) {
-        const tab = result?.data?.template?.tabs
-          ?.flatMap((item) => item.blocks || [])
-          .find((block) => iqiyiEpisodeTabSchema.safeParse(block).success);
-
-        const { success, data, error } = iqiyiEpisodeTabSchema.safeParse(tab);
-        if (!success) {
-          this.logger.warn("解析分集列表数据时发生错误：", z.prettifyError(error), tab);
-          return [];
-        }
-
-        let episodeIndex = 1;
-        for (const ep of data) {
-          /**
-           * 17: 预告
-           */
-          if (ep.mark_type_show === 17) {
-            continue;
-          }
-          const entityId = this.videoIdToEntityId(ep.videoId);
-          if (!entityId) {
-            continue;
-          }
-          if (this.episodeBlacklistPattern.test(ep.title)) {
-            continue;
-          }
-          episodes.push({
-            provider: this.providerName,
-            episodeId: this.generateIdString({ entityId }),
-            episodeTitle: ep.title,
-            episodeNumber: ep.short_display_name
-              ? (this.getEpisodeIndexFromTitle(ep.short_display_name) ?? episodeIndex)
-              : episodeIndex,
-          });
-          episodeIndex += 1;
-        }
+      if (!response.data) {
+        return [];
       }
+
+      const episodes: ProviderEpisodeInfo[] = [];
+
+      let episodeIndex = 1;
+      for (const ep of response.data) {
+        /**
+         * 17: 预告
+         */
+        if (ep.mark_type_show === 17) {
+          continue;
+        }
+        const entityId = this.videoIdToEntityId(ep.videoId);
+        if (!entityId) {
+          continue;
+        }
+        if (this.episodeBlacklistPattern.test(ep.title)) {
+          continue;
+        }
+        episodes.push({
+          provider: this.providerName,
+          episodeId: this.generateIdString({ entityId }),
+          episodeTitle: ep.title,
+          episodeNumber: ep.short_display_name
+            ? (this.getEpisodeIndexFromTitle(ep.short_display_name) ?? episodeIndex)
+            : episodeIndex,
+        });
+        episodeIndex += 1;
+      }
+
       return episodes;
     } catch (error) {
       this.logger.error("获取分集时发生错误：", error);
@@ -234,7 +214,7 @@ if (import.meta.rstest) {
   test("iqiyi", async () => {
     const scraper = new IqiyiScraper();
 
-    const episodes = await scraper.getEpisodes(scraper.generateIdString({ entityId: "10923301700" }));
+    const episodes = await scraper.getEpisodes(scraper.generateIdString({ entityId: "4463752132518500" }));
     expect(episodes).toBeDefined();
     expect(episodes.length).toBeGreaterThan(0);
 
