@@ -1,5 +1,15 @@
 # @forward-widget/danmu-universe
 
+## 0.8.0
+
+### Minor Changes
+
+- 6808b3a: 优化腾讯视频剧集搜索逻辑
+
+### Patch Changes
+
+- 157d0c5: 修复爱奇艺综艺获取数据失败的问题
+
 ## 0.7.0
 
 ### Minor Changes
