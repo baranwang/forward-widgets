@@ -1,6 +1,7 @@
 import { get } from "es-toolkit/compat";
 import { DEFAULT_COLOR_INT } from "../libs/constants";
 import { Fetch } from "../libs/fetch";
+import { Logger } from "../libs/logger";
 import { safeJsonParse } from "../libs/utils";
 import { z } from "../libs/zod";
 import { getEpisodeBlacklistPattern } from "./blacklist";
@@ -62,7 +63,9 @@ export const providerCommentItemSchema = z.object({
 export type ProviderCommentItem = z.infer<typeof providerCommentItemSchema>;
 
 export abstract class BaseScraper<IDType extends z.ZodType = any> {
-  abstract providerName: string;
+  public providerName!: string;
+
+  protected logger = new Logger(this.providerName);
 
   private _providerConfig = {} as ProviderConfig;
 
@@ -119,22 +122,4 @@ export abstract class BaseScraper<IDType extends z.ZodType = any> {
   get episodeBlacklistPattern() {
     return getEpisodeBlacklistPattern(this.PROVIDER_SPECIFIC_BLACKLIST);
   }
-
-  logger = {
-    log: (level: "debug" | "info" | "warn" | "error", ...args: any[]) => {
-      console[level](`[${this.providerName}]`, ...args);
-    },
-    debug: (...args: any[]) => {
-      this.logger.log("debug", ...args);
-    },
-    info: (...args: any[]) => {
-      this.logger.log("info", ...args);
-    },
-    warn: (...args: any[]) => {
-      this.logger.log("warn", ...args);
-    },
-    error: (...args: any[]) => {
-      this.logger.log("error", ...args);
-    },
-  };
 }

@@ -1,7 +1,6 @@
-import { isEqual, keyBy, sortBy, uniqWith } from "es-toolkit";
-import { searchVideoPlatformInfoWith360kan } from "../libs/360kan/search";
+import { keyBy, sortBy, uniqWith } from "es-toolkit";
 import { MediaType } from "../libs/constants";
-import { getVideoPlatformInfoByDoubanId } from "../libs/douban";
+import { QihooMatcher } from "../matchers/360kan";
 import type {
   BaseScraper,
   ProviderCommentItem,
@@ -74,7 +73,10 @@ export class Scraper {
     return segments[idx] ?? null;
   }
 
-  async getSegmentWithTime(segmentTime = 0, ...args: { provider: string; idString: string }[]): Promise<CommentItem[]> {
+  private async getSegmentWithTime(
+    segmentTime = 0,
+    ...args: { provider: string; idString: string }[]
+  ): Promise<CommentItem[]> {
     const tasks: Promise<{ comments: Array<ProviderCommentItem | null>; provider: string } | null>[] = [];
 
     for (const { provider, idString } of args) {
@@ -137,9 +139,12 @@ export class Scraper {
     return this.getSegmentWithTime(segmentTime, ...items);
   }
 
-  private async getEpisodes(...args: GetEpisodeParam[]) {
+  async getEpisodes(...args: GetEpisodeParam[]) {
     const tasks: Promise<ProviderEpisodeInfo[]>[] = [];
-    for (const { provider, idString, episodeNumber } of args) {
+    for (const { provider, idString, episodeNumber } of uniqWith(
+      args,
+      (a, b) => `${a.provider}:${a.idString}` === `${b.provider}:${b.idString}`,
+    )) {
       const scraper = this.scraperMap[provider];
       if (!scraper) continue;
       tasks.push(
@@ -174,26 +179,7 @@ export class Scraper {
     return await this.getEpisodes({ provider, idString, episodeNumber: this.getEpisodeNumber(mediaType, episode) });
   }
 
-  async getDetailWithDoubanIds(doubanIds: string[], mediaType: MediaType, episode?: string) {
-    const responses = await Promise.all(doubanIds.map((id) => getVideoPlatformInfoByDoubanId(id).catch(() => null)));
-    const episodeNumber = this.getEpisodeNumber(mediaType, episode);
-    const options: GetEpisodeParam[] = [];
-
-    for (const response of responses) {
-      if (!response) continue;
-      Object.entries(response.providers).forEach(([provider, item]) => {
-        options.push({
-          provider,
-          idString: this.scraperMap[provider]?.generateIdString(item) ?? "",
-          episodeNumber,
-        });
-      });
-    }
-
-    return this.getEpisodes(...uniqWith(options, isEqual));
-  }
-
-  async getDetailWithSearchParams(searchParams: SearchDanmuParams) {
+  async getEpisodeParams(searchParams: SearchDanmuParams) {
     const dramaTasks: Promise<ProviderDramaInfo[]>[] = [];
     for (const scraper of this.scrapers) {
       if (scraper.search) {
@@ -219,11 +205,12 @@ export class Scraper {
     }
 
     if (searchParams.qihooSearch === "true") {
-      const searchOptions = await searchVideoPlatformInfoWith360kan(searchParams);
+      const qihooMatcher = new QihooMatcher();
+      const searchOptions = await qihooMatcher.getEpisodeParams(searchParams);
       options.push(...searchOptions);
     }
 
-    return this.getEpisodes(...uniqWith(options, isEqual));
+    return options;
   }
 
   setProviderConfig(params: BaranwangDanmuUniverse.GlobalParams) {

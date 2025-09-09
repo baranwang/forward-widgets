@@ -1,7 +1,7 @@
 import { EMPTY_ANIME_CONFIG, type MediaType, PROVIDER_NAMES } from "./libs/constants";
-import { getDoubanIds } from "./libs/douban";
 import { z } from "./libs/zod";
-import { scraper } from "./scrapers";
+import { DoubanMatcher } from "./matchers/douban";
+import { type GetEpisodeParam, scraper } from "./scrapers";
 
 if (import.meta.rstest) {
   Object.defineProperty(globalThis, "WidgetMetadata", {
@@ -153,23 +153,22 @@ WidgetMetadata = {
 searchDanmu = async (params) => {
   scraper.setProviderConfig(params);
 
-  const { type: mediaType, episode, fuzzyMatch = "auto" } = params;
+  const { fuzzyMatch = "auto" } = params;
 
-  let episodes: Array<GetDetailResponseItem & { provider: string }> = [];
+  let episodesParams: GetEpisodeParam[] = [];
 
-  const doubanIds = await getDoubanIds(params);
-  if (doubanIds.length) {
-    episodes = await scraper.getDetailWithDoubanIds(doubanIds, mediaType as MediaType, episode);
-  }
+  const doubanMatcher = new DoubanMatcher();
+  const doubanEpisodesParams = await doubanMatcher.getEpisodeParams(params);
+  episodesParams = episodesParams.concat(doubanEpisodesParams);
 
-  if ((!episodes?.length && fuzzyMatch === "auto") || fuzzyMatch === "always") {
-    const searchEpisodes = await scraper.getDetailWithSearchParams(params);
-    episodes = episodes.concat(searchEpisodes);
+  if ((!episodesParams?.length && fuzzyMatch === "auto") || fuzzyMatch === "always") {
+    const searchEpisodes = await scraper.getEpisodeParams(params);
+    episodesParams = episodesParams.concat(searchEpisodes);
   }
 
   const showEmptyAnimeTitle =
     process.env.NODE_ENV === "development" || z.stringbool().catch(true).parse(params.emptyAnimeTitle);
-  if (!episodes.length && showEmptyAnimeTitle) {
+  if (!episodesParams.length && showEmptyAnimeTitle) {
     return {
       animes: [
         {
@@ -179,6 +178,9 @@ searchDanmu = async (params) => {
       ],
     };
   }
+
+  const episodes = await scraper.getEpisodes(...episodesParams);
+
   return {
     animes: episodes.map((item) => {
       let animeTitle = `[${PROVIDER_NAMES[item.provider as keyof typeof PROVIDER_NAMES]}] `;
@@ -200,27 +202,17 @@ getDetail = async (params) => {
   if (!animeId || animeId === EMPTY_ANIME_CONFIG.ID) {
     return null;
   }
+
   return scraper.getDetailWithAnimeId(animeId.toString(), mediaType as MediaType, episode);
 };
 
 getComments = async (params) => {
   scraper.setProviderConfig(params);
 
-  const { animeId, commentId, segmentTime, tmdbId, type: mediaType, episode } = params;
-  let videoId = commentId ?? animeId;
+  const { animeId, commentId, segmentTime } = params;
+  const videoId = commentId ?? animeId;
   if (videoId === EMPTY_ANIME_CONFIG.ID) {
     return null;
-  }
-  if (!videoId) {
-    if (!tmdbId) {
-      return null;
-    }
-    const doubanIds = await getDoubanIds(params);
-    if (!doubanIds.length) {
-      return null;
-    }
-    const episodes = await scraper.getDetailWithDoubanIds(doubanIds, mediaType as MediaType, episode);
-    videoId = episodes.map((item) => [item.provider, item.episodeId].join(":")).join(",");
   }
   const comments = await scraper.getDanmuWithSegmentTimeByVideoId(videoId.toString(), segmentTime);
   return {
