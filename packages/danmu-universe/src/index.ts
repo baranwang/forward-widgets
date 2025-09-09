@@ -150,6 +150,16 @@ WidgetMetadata = {
   ],
 };
 
+const checkShowEmptyAnimeTitle = (params: SearchDanmuParams) => {
+  if (import.meta.rstest) {
+    return false;
+  }
+  if (process.env.NODE_ENV === "development") {
+    return true;
+  }
+  return z.stringbool().catch(true).parse(params.emptyAnimeTitle);
+};
+
 searchDanmu = async (params) => {
   scraper.setProviderConfig(params);
 
@@ -179,9 +189,7 @@ searchDanmu = async (params) => {
     episodes = episodes.filter((item) => item.episodeNumber === parseInt(episode));
   }
 
-  const showEmptyAnimeTitle =
-    process.env.NODE_ENV === "development" || z.stringbool().catch(true).parse(params.emptyAnimeTitle);
-  if (!episodes.length && showEmptyAnimeTitle) {
+  if (!episodes.length && checkShowEmptyAnimeTitle(params)) {
     return {
       animes: [
         {
@@ -232,26 +240,39 @@ getComments = async (params) => {
 };
 
 if (import.meta.rstest) {
-  const { test, expect } = import.meta.rstest;
+  const { test, expect, describe, beforeAll } = import.meta.rstest;
 
-  test.only("searchDanmu", async () => {
-    // const danmu = await searchDanmu({ tmdbId: "1139695", type: "movie" } as SearchDanmuParams);
-    const danmu = await searchDanmu({
-      tmdbId: "30983",
-      seriesName: "名侦探柯南",
-      type: "tv",
-      season: "1",
-      episode: "520",
-    } as SearchDanmuParams);
-    console.log(danmu?.animes);
-    expect(danmu).toBeDefined();
-    expect(danmu?.animes.length).toBeGreaterThan(0);
+  beforeAll(async () => {
+    Widget.storage.clear();
   });
 
-  // test("getComments", async () => {
-  //   const comments = await getComments({ commentId: "iqiyi:5298806780347900" } as GetCommentsParams);
-  //   console.log(comments);
-  //   expect(comments).toBeDefined();
-  //   expect(comments?.comments.length).toBeGreaterThan(0);
-  // });
+  describe.only("searchDanmu", async () => {
+    test("名侦探柯南", async () => {
+      const result = await searchDanmu({
+        tmdbId: "30983",
+        seriesName: "名侦探柯南",
+        type: "tv",
+        season: "1",
+        episode: "520",
+      } as SearchDanmuParams);
+      expect(result).toBeDefined();
+      expect(result?.animes.length).toBeGreaterThan(0);
+    });
+
+    test("哪吒之魔童闹海", async () => {
+      const result = await searchDanmu({
+        tmdbId: "980477",
+        seriesName: "哪吒之魔童闹海",
+        type: "movie",
+        season: "1",
+        episode: "1",
+      } as SearchDanmuParams);
+      expect(result).toBeDefined();
+      expect(result?.animes.length).toBeGreaterThan(0);
+    });
+
+    // test("庆余年", async () => {
+
+    // })
+  });
 }

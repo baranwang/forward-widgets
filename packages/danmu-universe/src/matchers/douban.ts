@@ -126,6 +126,7 @@ export class DoubanMatcher {
   }
 
   private async getVideoPlatformInfoByDoubanId(doubanId: string) {
+    this.logger.info("获取视频平台信息", doubanId);
     const response = await this.fetch.get(`https://m.douban.com/rexxar/api/v2/movie/${doubanId}?for_mobile=1`, {
       headers: {
         Referer: `https://m.douban.com/movie/subject/${doubanId}/?dt_dapp=1`,
@@ -134,19 +135,23 @@ export class DoubanMatcher {
       schema: z.object({
         is_tv: z.boolean().optional(),
         vendors: z.array(
-          z.unknown().transform(
-            (v) =>
-              z
-                .object({
-                  id: z.string(),
-                  is_ad: z
-                    .boolean()
-                    .catch(false)
-                    .refine((val) => val),
-                  uri: z.string(),
-                })
-                .safeParse(v).data ?? null,
-          ),
+          z.unknown().transform((v) => {
+            const { success, data, error } = z
+              .object({
+                id: z.string(),
+                is_ad: z
+                  .boolean()
+                  .catch(false)
+                  .refine((val) => !val),
+                uri: z.string(),
+              })
+              .safeParse(v);
+            if (!success) {
+              this.logger.error("解析视频平台信息失败", z.prettifyError(error), v);
+              return null;
+            }
+            return data;
+          }),
         ),
       }),
       successStatus: [200],
@@ -155,6 +160,8 @@ export class DoubanMatcher {
         ttl: TTL_7_DAYS,
       },
     });
+
+    console.log("response", response.data);
 
     const results: GetEpisodeParam[] = [];
 
@@ -241,12 +248,13 @@ export class DoubanMatcher {
 
   public async getEpisodeParams(params: SearchDanmuParams) {
     const doubanIds = await this.getDoubanIds(params);
+    this.logger.info("获取到豆瓣ID", doubanIds);
     const results: GetEpisodeParam[] = [];
     for (const doubanId of doubanIds) {
       const videoPlatformInfo = await this.getVideoPlatformInfoByDoubanId(doubanId);
       results.push(...videoPlatformInfo);
     }
-    console.log("results", results);
+    this.logger.info("获取到视频平台信息", results);
     return results;
   }
 }
