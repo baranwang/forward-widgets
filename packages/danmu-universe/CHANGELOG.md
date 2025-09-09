@@ -1,5 +1,11 @@
 # @forward-widget/danmu-universe
 
+## 0.9.1
+
+### Patch Changes
+
+- cb0468f: 修复豆瓣解析错误的问题
+
 ## 0.9.0
 
 ### Minor Changes
