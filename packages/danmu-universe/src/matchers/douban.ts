@@ -32,7 +32,9 @@ export class DoubanMatcher {
       finalImdbId = episodes?.episodes.find((ep) => ep.episodeNumber === 1)?.id ?? "";
     }
     finalImdbId ||= imdbId;
-    console.log("Get douban info by imdb id", finalImdbId);
+
+    this.logger.info("通过 imdb id 获取豆瓣信息", finalImdbId);
+
     const response = await this.fetch.post(
       `https://api.douban.com/v2/movie/imdb/${finalImdbId}`,
       {
@@ -161,8 +163,6 @@ export class DoubanMatcher {
       },
     });
 
-    console.log("response", response.data);
-
     const results: GetEpisodeParam[] = [];
 
     for (const vendor of response.data?.vendors ?? []) {
@@ -225,7 +225,7 @@ export class DoubanMatcher {
         doubanIds.add(doubanInfo.doubanId);
       }
     } catch (error) {
-      console.error("Error getting douban info by tmdb id", error);
+      this.logger.error("Error getting douban info by tmdb id", error);
     }
 
     if (fuzzyMatch === "always" || (fuzzyMatch === "auto" && !doubanIds.size)) {
@@ -240,7 +240,7 @@ export class DoubanMatcher {
           doubanIds.add(subject.target_id);
         }
       } catch (error) {
-        console.error("Error searching douban info by name", error);
+        this.logger.error("Error searching douban info by name", error);
       }
     }
     return Array.from(doubanIds);
