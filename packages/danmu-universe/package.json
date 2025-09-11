@@ -41,6 +41,9 @@
     "url": "https://github.com/baranwang/forward-widgets.git",
     "directory": "packages/danmu-universe"
   },
+  "bugs": {
+    "url": "https://github.com/baranwang/forward-widgets/issues/new?template=danmu-universe.md"
+  },
   "publishConfig": {
     "provenance": true
   },
