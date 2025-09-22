@@ -1,5 +1,11 @@
 # @forward-widget/danmu-universe
 
+## 0.10.1
+
+### Patch Changes
+
+- 6daa297: 修复未配置弹幕过滤时弹幕被全部过滤的问题
+
 ## 0.10.0
 
 ### Minor Changes
