@@ -9,9 +9,9 @@ import type {
   ProviderSegmentInfo,
 } from "./base";
 import { BilibiliScraper } from "./bilibili";
+import { type GlobalParamsConfig, globalParamsConfigSchema } from "./config";
 import { IqiyiScraper } from "./iqiyi";
 import { MgTVScraper } from "./mgtv";
-import { providerConfigSchema } from "./provider-config";
 import { RenRenScraper } from "./renren";
 import { TencentScraper } from "./tencent";
 import { YoukuScraper } from "./youku";
@@ -26,6 +26,8 @@ export type GetEpisodeParam = {
 
 export class Scraper {
   private scrapers: BaseScraper[] = [];
+
+  private globalParams: GlobalParamsConfig = {} as GlobalParamsConfig;
 
   constructor() {
     scrapers.forEach((Scraper) => {
@@ -85,33 +87,40 @@ export class Scraper {
     segmentTime = 0,
     ...args: { provider: string; idString: string }[]
   ): Promise<CommentItem[]> {
-    const tasks: Promise<{ comments: Array<ProviderCommentItem | null>; provider: string } | null>[] = [];
+    const tasks = args.map(async ({ provider, idString }) => {
+      try {
+        const segments = await this.getSegmentsByProvider(provider, idString);
+        if (!segments.length) return null;
+        const hit = this.findSegmentAtTime(segments, segmentTime);
+        if (!hit) return null;
 
-    for (const { provider, idString } of args) {
-      tasks.push(
-        (async () => {
-          const segments = await this.getSegmentsByProvider(provider, idString);
-          if (!segments.length) return null;
-          const hit = this.findSegmentAtTime(segments, segmentTime);
-          if (!hit) return null;
-          const scraper = this.scraperMap[provider];
-          if (!scraper) return null;
-          const comments = await scraper.getComments(idString, hit.segmentId);
-          if (!comments) return null;
-          return { comments, provider };
-        })(),
-      );
-    }
+        const scraper = this.scraperMap[provider];
+        if (!scraper) return null;
 
-    const results = await Promise.all(tasks);
+        const comments = await scraper.getComments(idString, hit.segmentId);
+        if (!comments?.length) return null;
+
+        return { provider, comments };
+      } catch {
+        return null;
+      }
+    });
+
+    const settled = await Promise.all(tasks);
     const contentMap = new Map<string, { item: ProviderCommentItem; count: number; provider: string }>();
-    for (const result of results) {
+    for (const result of settled) {
       if (!result?.comments?.length) continue;
 
       for (const comment of result.comments) {
         if (!comment) continue;
 
-        const key = [comment.mode, comment.color, comment.content].join("___");
+        let key = "";
+        if (this.globalParams.global.content.aggregation) {
+          key = [comment.mode, comment.color, comment.content].join("___");
+        } else {
+          key = comment.id ?? Math.random().toString();
+        }
+
         const existing = contentMap.get(key);
         if (!existing) {
           contentMap.set(key, { item: comment, count: 1, provider: result.provider });
@@ -124,7 +133,11 @@ export class Scraper {
       }
     }
     const comments: CommentItem[] = [];
+    const blacklistRegexp = new RegExp(this.globalParams.global.content.blacklist);
     contentMap.forEach(({ item, count, provider }) => {
+      if (blacklistRegexp.test(item.content)) {
+        return;
+      }
       const content = count > 1 ? `${item.content} × ${count}` : item.content;
       comments.push({
         cid: item.id,
@@ -222,11 +235,12 @@ export class Scraper {
     return options;
   }
 
-  setProviderConfig(params: BaranwangDanmuUniverse.GlobalParams) {
-    const { success, data } = providerConfigSchema.safeParse(params);
+  setGlobalParams(params: BaranwangDanmuUniverse.GlobalParams) {
+    const { success, data } = globalParamsConfigSchema.safeParse(params);
     if (success) {
+      this.globalParams = data;
       this.scrapers.forEach((scraper) => {
-        scraper.providerConfig = data;
+        scraper.providerConfig = data.provider;
       });
     }
   }

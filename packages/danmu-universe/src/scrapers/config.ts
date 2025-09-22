@@ -14,8 +14,21 @@ export type Unflatten<T extends Record<string, unknown>> = Simplify<
   >
 >;
 
-export const providerConfigSchema = z
+export const globalParamsConfigSchema = z
   .object({
+    "global.content.aggregation": z.stringbool().catch(true),
+
+    "global.content.blacklist": z
+      .string()
+      .refine((v) => {
+        try {
+          new RegExp(v);
+          return true;
+        } catch {
+          return false;
+        }
+      })
+      .catch(""),
     "provider.renren.mode": z.enum(["default", "choice"]).catch("default"),
   })
   .transform((v) => {
@@ -23,7 +36,7 @@ export const providerConfigSchema = z
     Object.entries(v).forEach(([key, value]) => {
       set(result, key, value);
     });
-    return result.provider;
+    return result;
   });
 
-export type ProviderConfig = z.infer<typeof providerConfigSchema>;
+export type GlobalParamsConfig = z.infer<typeof globalParamsConfigSchema>;

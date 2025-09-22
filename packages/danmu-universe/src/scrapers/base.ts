@@ -5,8 +5,8 @@ import { Fetch } from "../libs/fetch";
 import { Logger } from "../libs/logger";
 import { z } from "../libs/zod";
 import { getEpisodeBlacklistPattern } from "./blacklist";
+import type { GlobalParamsConfig } from "./config";
 import { parseEpNumber } from "./parse-ep-number";
-import type { ProviderConfig } from "./provider-config";
 
 export interface ProviderDramaInfo {
   /** 数据源提供方 */
@@ -73,12 +73,12 @@ export abstract class BaseScraper<IDType extends z.ZodType = any> {
     this.logger = new Logger(this.providerName);
   }
 
-  private _providerConfig = {} as ProviderConfig;
+  private _providerConfig = {} as GlobalParamsConfig["provider"];
 
   public get providerConfig() {
     return this._providerConfig;
   }
-  public set providerConfig(config: ProviderConfig) {
+  public set providerConfig(config: GlobalParamsConfig["provider"]) {
     const currentConfig = get(config, this.providerName);
     if (currentConfig) {
       this.logger.debug("设置 Provider 配置", currentConfig);

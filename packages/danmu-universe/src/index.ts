@@ -105,6 +105,28 @@ WidgetMetadata = {
       ],
     },
     {
+      title: "弹幕内容聚合",
+      name: "global.content.aggregation",
+      value: "true",
+      type: "enumeration",
+      enumOptions: [
+        {
+          title: "开启",
+          value: "true",
+        },
+        {
+          title: "关闭",
+          value: "false",
+        },
+      ],
+    },
+    {
+      title: "弹幕内容过滤",
+      name: "global.content.blacklist",
+      value: "示例1|示例2",
+      type: "input",
+    },
+    {
       title: `[${PROVIDER_NAMES.renren}] 弹幕模式`,
       name: "provider.renren.mode",
       description: "弹幕模式，精选弹幕相比默认弹幕质量更高",
@@ -165,7 +187,7 @@ const checkShowEmptyAnimeTitle = (params: SearchDanmuParams) => {
 };
 
 searchDanmu = async (params) => {
-  scraper.setProviderConfig(params);
+  scraper.setGlobalParams(params);
 
   const { fuzzyMatch = "auto", type: mediaType, episode } = params;
 
@@ -218,7 +240,7 @@ searchDanmu = async (params) => {
 };
 
 getDetail = async (params) => {
-  scraper.setProviderConfig(params);
+  scraper.setGlobalParams(params);
 
   const { animeId, type: mediaType, episode } = params;
   if (!animeId || animeId === EMPTY_ANIME_CONFIG.ID) {
@@ -229,7 +251,7 @@ getDetail = async (params) => {
 };
 
 getComments = async (params) => {
-  scraper.setProviderConfig(params);
+  scraper.setGlobalParams(params);
 
   const { animeId, commentId, segmentTime } = params;
   const videoId = commentId ?? animeId;
