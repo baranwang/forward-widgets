@@ -123,7 +123,7 @@ WidgetMetadata = {
     {
       title: "弹幕内容过滤",
       name: "global.content.blacklist",
-      value: "示例1|示例2",
+      value: "",
       type: "input",
     },
     {

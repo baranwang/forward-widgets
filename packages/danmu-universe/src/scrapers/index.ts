@@ -133,9 +133,11 @@ export class Scraper {
       }
     }
     const comments: CommentItem[] = [];
-    const blacklistRegexp = new RegExp(this.globalParams.global.content.blacklist);
+    const blacklistRegexp = this.globalParams.global.content.blacklist
+      ? new RegExp(this.globalParams.global.content.blacklist)
+      : null;
     contentMap.forEach(({ item, count, provider }) => {
-      if (blacklistRegexp.test(item.content)) {
+      if (blacklistRegexp?.test(item.content)) {
         return;
       }
       const content = count > 1 ? `${item.content} × ${count}` : item.content;
