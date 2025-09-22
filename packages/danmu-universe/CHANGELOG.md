@@ -1,5 +1,12 @@
 # @forward-widget/danmu-universe
 
+## 0.10.0
+
+### Minor Changes
+
+- 9ba3a4e: 新增弹幕内容过滤功能
+- 9ba3a4e: 增加弹幕内容聚合开关
+
 ## 0.9.1
 
 ### Patch Changes
