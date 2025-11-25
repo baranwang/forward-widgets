@@ -1,3 +1,4 @@
+import { DoubanHistory } from "./experimental/douban-history";
 import { EMPTY_ANIME_CONFIG, type MediaType, PROVIDER_NAMES } from "./libs/constants";
 import { z } from "./libs/zod";
 import { DoubanMatcher } from "./matchers/douban";
@@ -143,6 +144,33 @@ WidgetMetadata = {
         },
       ],
     },
+    {
+      title: "豆瓣书影音档案（实验性）",
+      name: "global.experimental.doubanHistory.enabled",
+      description: "是否开启自动同步豆瓣书影音档案",
+      value: "false",
+      type: "enumeration",
+      enumOptions: [
+        {
+          title: "关闭",
+          value: "false",
+        },
+        {
+          title: "开启",
+          value: "true",
+        },
+      ],
+    },
+    {
+      title: "豆瓣 Cookie 中的 dbcl2 值",
+      name: "global.experimental.doubanHistory.dbcl2",
+      value: "",
+      type: "input",
+      belongTo: {
+        paramName: "global.experimental.doubanHistory.enabled",
+        value: ["true"],
+      },
+    },
   ],
   modules: [
     {
@@ -187,15 +215,25 @@ const checkShowEmptyAnimeTitle = (params: SearchDanmuParams) => {
 };
 
 searchDanmu = async (params) => {
-  scraper.setGlobalParams(params);
+  const globalParams = scraper.setGlobalParams(params);
 
   const { fuzzyMatch = "auto", type: mediaType, episode } = params;
 
   let episodesParams: GetEpisodeParam[] = [];
 
   const doubanMatcher = new DoubanMatcher();
-  const doubanEpisodesParams = await doubanMatcher.getEpisodeParams(params);
-  episodesParams = episodesParams.concat(doubanEpisodesParams);
+  const { doubanIds, videoPlatformInfo } = await doubanMatcher.getEpisodeParams(params);
+  episodesParams = episodesParams.concat(videoPlatformInfo);
+
+  if (
+    globalParams?.global.experimental.doubanHistory.enabled &&
+    globalParams?.global.experimental.doubanHistory.dbcl2
+  ) {
+    const doubanHistory = new DoubanHistory(globalParams.global.experimental.doubanHistory.dbcl2);
+    if (doubanIds.length === 1) {
+      await doubanHistory.setStatus(mediaType, doubanIds[0], mediaType === "tv" ? "doing" : "done");
+    }
+  }
 
   if ((!episodesParams?.length && fuzzyMatch === "auto") || fuzzyMatch === "always") {
     const searchEpisodes = await scraper.getEpisodeParams(params);

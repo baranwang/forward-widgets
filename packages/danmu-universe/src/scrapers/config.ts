@@ -29,6 +29,10 @@ export const globalParamsConfigSchema = z
         }
       })
       .catch(""),
+
+    "global.experimental.doubanHistory.enabled": z.stringbool().catch(false),
+    "global.experimental.doubanHistory.dbcl2": z.string().catch(""),
+
     "provider.renren.mode": z.enum(["default", "choice"]).catch("default"),
   })
   .transform((v) => {

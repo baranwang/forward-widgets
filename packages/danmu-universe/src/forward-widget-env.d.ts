@@ -32,6 +32,14 @@ namespace BaranwangDanmuUniverse {
          * @default 'default'
          */
         'provider.renren.mode': 'default' | 'choice';
+        /**
+         * 豆瓣书影音档案（实验性）
+         * @description 是否开启自动同步豆瓣书影音档案
+         * @default 'false'
+         */
+        'global.experimental.doubanHistory.enabled': 'false' | 'true';
+        /** 豆瓣 Cookie 中的 dbcl2 值 */
+        'global.experimental.doubanHistory.dbcl2': string;
     }
 }
 

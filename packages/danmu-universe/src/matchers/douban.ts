@@ -255,6 +255,9 @@ export class DoubanMatcher {
       results.push(...videoPlatformInfo);
     }
     this.logger.info("获取到视频平台信息", results);
-    return results;
+    return {
+      doubanIds,
+      videoPlatformInfo: results,
+    };
   }
 }

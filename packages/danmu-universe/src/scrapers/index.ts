@@ -245,6 +245,7 @@ export class Scraper {
         scraper.providerConfig = data.provider;
       });
     }
+    return data;
   }
 }
 
