@@ -11,6 +11,7 @@
     "cf-typegen": "wrangler types --env-interface CloudflareBindings"
   },
   "dependencies": {
+    "axios": "^1.13.2",
     "hono": "^4.10.6",
     "honox": "^0.1.52"
   },
@@ -20,7 +21,7 @@
     "@hono/vite-dev-server": "^0.23.0",
     "@tailwindcss/vite": "^4.1.17",
     "tailwindcss": "^4.1.17",
-    "vite": "^6.3.5",
+    "vite": "npm:rolldown-vite@^7.2.8",
     "vite-ssr-components": "^0.5.1",
     "wrangler": "^4.17.0"
   }
