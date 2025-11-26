@@ -1,4 +1,3 @@
-import { number } from "zod";
 import { Fetch } from "../libs/fetch";
 import type { GlobalParamsConfig } from "../scrapers/config";
 
@@ -26,23 +25,23 @@ export class Trakt {
         {
           watched_at: new Date().toISOString(),
           ids: {
-            tmdb: params.tmdbId,
+            tmdb: parseInt(params.tmdbId, 10),
           },
         },
       ];
     }
-    if (params.type === "tv") {
+    if (params.type === "tv" && params.season && params.episode) {
       body.shows = [
         {
           ids: {
-            tmdb: params.tmdbId,
+            tmdb: parseInt(params.tmdbId, 10),
           },
           seasons: [
             {
-              number: params.season,
+              number: parseInt(params.season, 10),
               episodes: [
                 {
-                  number: params.episode,
+                  number: parseInt(params.episode, 10),
                   watched_at: new Date().toISOString(),
                 },
               ],

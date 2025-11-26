@@ -1,4 +1,5 @@
 import Base64 from "crypto-js/enc-base64";
+import Utf8 from "crypto-js/enc-utf8";
 import { set } from "es-toolkit/compat";
 import type { Simplify, Split, UnionToIntersection } from "type-fest";
 import { safeJsonParseWithZod } from "../libs/utils";
@@ -42,7 +43,7 @@ export const globalParamsConfigSchema = z
       .transform((v) => {
         if (!v) return null;
         return safeJsonParseWithZod(
-          Base64.parse(v).toString(),
+          Base64.parse(v).toString(Utf8),
           z.object({
             access_token: z.string(),
             expires_at: z.number().min(Date.now()),
