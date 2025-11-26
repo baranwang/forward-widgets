@@ -1,5 +1,11 @@
 # @forward-widget/danmu-universe
 
+## 0.12.0
+
+### Minor Changes
+
+- 9721040: 支持自定义豆瓣书影音档案评论
+
 ## 0.11.0
 
 ### Minor Changes
