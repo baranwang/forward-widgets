@@ -40,6 +40,11 @@ namespace BaranwangDanmuUniverse {
         'global.experimental.doubanHistory.enabled': 'false' | 'true';
         /** 豆瓣 Cookie 中的 dbcl2 值 */
         'global.experimental.doubanHistory.dbcl2': string;
+        /**
+         * 豆瓣自定义评论
+         * @default '自豪的使用 Forward*'
+         */
+        'global.experimental.doubanHistory.customComment': string;
     }
 }
 
