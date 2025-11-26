@@ -1,0 +1,28 @@
+{
+  "name": "trakt-forward",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build --mode client && vite build",
+    "preview": "wrangler dev",
+    "deploy": "npm run build && wrangler deploy",
+    "cf-typegen": "wrangler types --env-interface CloudflareBindings"
+  },
+  "dependencies": {
+    "axios": "^1.13.2",
+    "hono": "^4.10.6",
+    "honox": "^0.1.52"
+  },
+  "devDependencies": {
+    "@cloudflare/vite-plugin": "^1.2.3",
+    "@hono/vite-build": "^1.7.0",
+    "@hono/vite-dev-server": "^0.23.0",
+    "@tailwindcss/vite": "^4.1.17",
+    "tailwindcss": "^4.1.17",
+    "vite": "npm:rolldown-vite@^7.2.8",
+    "vite-ssr-components": "^0.5.1",
+    "wrangler": "^4.17.0"
+  }
+}

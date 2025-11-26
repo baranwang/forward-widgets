@@ -8,11 +8,23 @@
       "source.sortImports.biome": "explicit"
     }
   },
+  "[typescriptreact]": {
+    "editor.defaultFormatter": "biomejs.biome",
+    "editor.formatOnSave": true,
+    "editor.codeActionsOnSave": {
+      "source.fixAll.biome": "explicit",
+      "source.organizeImports.biome": "explicit",
+      "source.sortImports.biome": "explicit"
+    }
+  },
   "[json]": {
     "editor.defaultFormatter": "biomejs.biome"
   },
   "[jsonc]": {
     "editor.defaultFormatter": "biomejs.biome"
   },
+  "files.associations": {
+		"wrangler.json": "jsonc"
+	},
   "cSpell.words": ["danmu", "imdb", "tmdb", "douban", "iqiyi", "bilibili", "youku", "renren", "mgtv"]
 }

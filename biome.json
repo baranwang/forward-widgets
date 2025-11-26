@@ -16,9 +16,15 @@
   },
   "linter": {
     "enabled": true,
-    "includes": ["**/src/**", "!**/forward-widget-env.d.ts"],
+    "includes": ["**/src/**", "**/app/**", "!**/forward-widget-env.d.ts"],
     "rules": {
-      "recommended": true
+      "recommended": true,
+      "nursery": {
+        "useSortedClasses": {
+          "level": "info",
+          "fix": "safe"
+        }
+      }
     }
   },
   "javascript": {
