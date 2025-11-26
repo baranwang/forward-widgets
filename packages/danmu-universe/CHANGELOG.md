@@ -1,5 +1,11 @@
 # @forward-widget/danmu-universe
 
+## 0.13.0
+
+### Minor Changes
+
+- ba2dec5: 新增 Trakt 播放记录同步
+
 ## 0.12.0
 
 ### Minor Changes
