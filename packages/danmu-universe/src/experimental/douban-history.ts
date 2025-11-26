@@ -2,17 +2,18 @@ import { qs } from "url-parse";
 import { Fetch } from "../libs/fetch";
 import { Logger } from "../libs/logger";
 import { storage } from "../libs/storage";
+import type { GlobalParamsConfig } from "../scrapers/config";
 
 export class DoubanHistory {
   private fetch = new Fetch();
 
   private logger = new Logger("DoubanHistory");
 
-  constructor(dbcl2: string) {
-    this.fetch.setCookie({ dbcl2 });
+  constructor(private readonly config: GlobalParamsConfig["global"]["experimental"]["doubanHistory"]) {
+    this.fetch.setCookie({ dbcl2: config.dbcl2 });
   }
 
-  async getCK() {
+  private async getCK() {
     const storageKey = "doubanHistory:ck";
     let ck = await storage.get(storageKey);
     if (!ck) {
@@ -32,7 +33,7 @@ export class DoubanHistory {
       qs.stringify({
         ck,
         tags: "",
-        comment: "自豪的使用 Forward",
+        comment: this.config.customComment,
         sync_douban: 1,
         rating: 0,
       }),

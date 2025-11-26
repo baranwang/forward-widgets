@@ -32,6 +32,7 @@ export const globalParamsConfigSchema = z
 
     "global.experimental.doubanHistory.enabled": z.stringbool().catch(false),
     "global.experimental.doubanHistory.dbcl2": z.string().catch(""),
+    "global.experimental.doubanHistory.customComment": z.string().catch("自豪的使用 Forward"),
 
     "provider.renren.mode": z.enum(["default", "choice"]).catch("default"),
   })

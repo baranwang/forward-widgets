@@ -171,6 +171,20 @@ WidgetMetadata = {
         value: ["true"],
       },
     },
+    {
+      title: "豆瓣自定义评论",
+      name: "global.experimental.doubanHistory.customComment",
+      value: "自豪的使用 Forward*",
+      type: "input",
+      belongTo: {
+        paramName: "global.experimental.doubanHistory.enabled",
+        value: ["true"],
+      },
+      placeholders: ["自豪的使用 Forward*", "Marked by Forward*"].map((item) => ({
+        title: item,
+        value: item,
+      })),
+    },
   ],
   modules: [
     {
@@ -225,14 +239,18 @@ searchDanmu = async (params) => {
   const { doubanIds, videoPlatformInfo } = await doubanMatcher.getEpisodeParams(params);
   episodesParams = episodesParams.concat(videoPlatformInfo);
 
-  if (
-    globalParams?.global.experimental.doubanHistory.enabled &&
-    globalParams?.global.experimental.doubanHistory.dbcl2
-  ) {
-    const doubanHistory = new DoubanHistory(globalParams.global.experimental.doubanHistory.dbcl2);
-    if (doubanIds.length === 1) {
-      await doubanHistory.setStatus(mediaType, doubanIds[0], mediaType === "tv" ? "doing" : "done");
+  try {
+    if (
+      globalParams?.global.experimental.doubanHistory.enabled &&
+      globalParams?.global.experimental.doubanHistory.dbcl2
+    ) {
+      const doubanHistory = new DoubanHistory(globalParams.global.experimental.doubanHistory);
+      if (doubanIds.length === 1) {
+        await doubanHistory.setStatus(mediaType, doubanIds[0], mediaType === "tv" ? "doing" : "done");
+      }
     }
+  } catch (error) {
+    console.error(error);
   }
 
   if ((!episodesParams?.length && fuzzyMatch === "auto") || fuzzyMatch === "always") {
