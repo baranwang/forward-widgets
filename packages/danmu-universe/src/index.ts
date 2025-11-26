@@ -1,4 +1,5 @@
 import { DoubanHistory } from "./experimental/douban-history";
+import { Trakt } from "./experimental/trakt";
 import { EMPTY_ANIME_CONFIG, type MediaType, PROVIDER_NAMES } from "./libs/constants";
 import { z } from "./libs/zod";
 import { DoubanMatcher } from "./matchers/douban";
@@ -185,6 +186,35 @@ WidgetMetadata = {
         value: item,
       })),
     },
+
+    {
+      title: "Trakt 历史同步（实验性）",
+      name: "global.experimental.trakt.enabled",
+      description: "是否开启自动同步 Trakt 历史",
+      value: "false",
+      type: "enumeration",
+      enumOptions: [
+        {
+          title: "关闭",
+          value: "false",
+        },
+        {
+          title: "开启",
+          value: "true",
+        },
+      ],
+    },
+    {
+      title: "Trakt 令牌",
+      description: "通过 trakt-forward.baranwang.workers.dev 获取",
+      name: "global.experimental.trakt.token",
+      value: "",
+      type: "input",
+      belongTo: {
+        paramName: "global.experimental.trakt.enabled",
+        value: ["true"],
+      },
+    },
   ],
   modules: [
     {
@@ -240,6 +270,15 @@ searchDanmu = async (params) => {
   episodesParams = episodesParams.concat(videoPlatformInfo);
 
   try {
+    if (globalParams?.global.experimental.trakt.enabled && globalParams?.global.experimental.trakt.token) {
+      const trakt = new Trakt(globalParams.global.experimental.trakt);
+      await trakt.syncHistory(params);
+    }
+  } catch (error) {
+    console.error(error);
+  }
+
+  try {
     if (
       globalParams?.global.experimental.doubanHistory.enabled &&
       globalParams?.global.experimental.doubanHistory.dbcl2
@@ -261,14 +300,14 @@ searchDanmu = async (params) => {
   if (mediaType === "tv") {
     episodesParams = episodesParams.map((item) => ({
       ...item,
-      episodeNumber: episode ? parseInt(episode) : undefined,
+      episodeNumber: episode ? parseInt(episode, 10) : undefined,
     }));
   }
 
   let episodes = await scraper.getEpisodes(...episodesParams);
 
   if (mediaType === "tv" && episode) {
-    episodes = episodes.filter((item) => item.episodeNumber === parseInt(episode));
+    episodes = episodes.filter((item) => item.episodeNumber === parseInt(episode, 10));
   }
 
   if (!episodes.length && checkShowEmptyAnimeTitle(params)) {

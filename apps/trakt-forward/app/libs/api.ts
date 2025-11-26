@@ -36,14 +36,16 @@ export function getTokenFactory(c: Context<Env>) {
         refresh_token: resp.data.refresh_token,
       }),
     );
-    const pluginData = Buffer.from(
+    const expiresAt = Date.now() + resp.data.expires_in * 1000;
+    const token = Buffer.from(
       JSON.stringify({
         access_token: resp.data.access_token,
-        expires_at: Date.now() + resp.data.expires_in * 1000,
-        redirect_uri: params.redirect_uri,
-        refresh_token: resp.data.refresh_token,
+        expires_at: expiresAt,
       }),
-    ).toString("base64url");
-    return pluginData;
+    ).toString("base64");
+    return {
+      token,
+      expiresAt,
+    };
   };
 }

@@ -45,6 +45,17 @@ namespace BaranwangDanmuUniverse {
          * @default '自豪的使用 Forward*'
          */
         'global.experimental.doubanHistory.customComment': string;
+        /**
+         * Trakt 历史同步（实验性）
+         * @description 是否开启自动同步 Trakt 历史
+         * @default 'false'
+         */
+        'global.experimental.trakt.enabled': 'false' | 'true';
+        /**
+         * Trakt 令牌
+         * @description 通过 trakt-forward.baranwang.workers.dev 获取
+         */
+        'global.experimental.trakt.token': string;
     }
 }
 
