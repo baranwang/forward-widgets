@@ -14,5 +14,8 @@
   "[jsonc]": {
     "editor.defaultFormatter": "biomejs.biome"
   },
+  "files.associations": {
+		"wrangler.json": "jsonc"
+	},
   "cSpell.words": ["danmu", "imdb", "tmdb", "douban", "iqiyi", "bilibili", "youku", "renren", "mgtv"]
 }
