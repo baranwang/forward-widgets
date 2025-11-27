@@ -1,5 +1,5 @@
-import { safeJsonParse, safeJsonParseWithZod } from "./utils";
-import { z } from "./zod";
+import { safeJsonParse, safeJsonParseWithZod } from "@forward-widget/libs-utils";
+import { z } from "zod";
 
 interface SetOptions {
   /** 覆盖默认 TTL（毫秒） */
@@ -67,22 +67,6 @@ class Storage {
 
   setJson(key: string, value: unknown, options?: SetOptions) {
     return this.set(key, JSON.stringify(value), options);
-  }
-
-  async cleanup() {
-    try {
-      const META_LAST_CLEANUP_KEY = "__storage_last_cleanup__";
-      const skipCleanup = this.get(META_LAST_CLEANUP_KEY);
-      if (!skipCleanup) {
-        const keys = await Widget.storage.keys();
-        keys.forEach((key) => {
-          this.get(key);
-        });
-      }
-      this.set(META_LAST_CLEANUP_KEY, "1", { ttl: TTL_1_DAY });
-    } catch (error) {
-      console.error("Failed to cleanup storage", error);
-    }
   }
 }
 

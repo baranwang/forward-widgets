@@ -22,7 +22,7 @@ WidgetMetadata = {
   author: "匿名",
   version: widgetVersion,
   requiredVersion: "0.0.1",
-  site: "https://github.com/baranwang/forward-widgets/tree/main/packages/nsfw",
+  site: "https://github.com/baranwang/forward-widgets/tree/main/apps/nsfw",
   detailCacheDuration: 1,
   globalParams: [
     {

@@ -1,0 +1,29 @@
+{
+  "name": "@forward-widget/libs-storage",
+  "version": "0.0.0",
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "types": "./dist/index.d.ts",
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "rslib build",
+    "dev": "rslib build --watch"
+  },
+  "dependencies": {
+    "@forward-widget/libs-utils": "workspace:^",
+    "zod": "4.0.17"
+  },
+  "devDependencies": {
+    "@forward-widget/libs": "^2.1.0",
+    "@rslib/core": "^0.18.2",
+    "@types/node": "^24.10.1",
+    "typescript": "^5.9.3"
+  }
+}

@@ -44,7 +44,7 @@ WidgetMetadata = {
   description: "通用弹幕插件，支持腾讯、优酷、爱奇艺、哔哩哔哩、人人视频等平台",
   author: "Baran",
   version: widgetVersion,
-  site: "https://github.com/baranwang/forward-widgets/tree/main/packages/danmu-universe",
+  site: "https://github.com/baranwang/forward-widgets/tree/main/apps/danmu-universe",
   requiredVersion: "0.0.2",
   globalParams: [
     {

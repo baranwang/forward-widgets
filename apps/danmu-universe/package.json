@@ -15,6 +15,9 @@
     "test": "rstest"
   },
   "dependencies": {
+    "@forward-widget/libs-fetch": "workspace:^",
+    "@forward-widget/libs-storage": "workspace:^",
+    "@forward-widget/libs-utils": "workspace:^",
     "crypto-js": "^4.2.0",
     "date-fns": "^4.1.0",
     "es-toolkit": "^1.39.9",
@@ -27,19 +30,19 @@
     "@forward-widget/libs": "^2.1.0",
     "@forward-widget/rslib-plugin": "^2.1.0",
     "@rsdoctor/rspack-plugin": "^1.2.3",
-    "@rslib/core": "^0.12.4",
-    "@rstest/core": "^0.3.2",
+    "@rslib/core": "^0.18.2",
+    "@rstest/core": "^0.6.6",
     "@types/crypto-js": "^4.2.2",
     "@types/node": "^22.16.0",
     "@types/url-parse": "^1.4.11",
     "rsbuild-plugin-protobufjs": "^0.0.0",
     "type-fest": "^4.41.0",
-    "typescript": "^5.8.3"
+    "typescript": "^5.9.3"
   },
   "repository": {
     "type": "git",
     "url": "https://github.com/baranwang/forward-widgets.git",
-    "directory": "packages/danmu-universe"
+    "directory": "apps/danmu-universe"
   },
   "bugs": {
     "url": "https://github.com/baranwang/forward-widgets/issues/new?template=danmu-universe.md"

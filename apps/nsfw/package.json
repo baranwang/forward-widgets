@@ -17,9 +17,9 @@
   "devDependencies": {
     "@forward-widget/libs": "^2.1.0",
     "@forward-widget/rslib-plugin": "^2.1.0",
-    "@rslib/core": "^0.12.4",
+    "@rslib/core": "^0.18.2",
     "@types/node": "^22.16.0",
-    "typescript": "^5.8.3"
+    "typescript": "^5.9.3"
   },
   "dependencies": {
     "es-toolkit": "^1.39.9"
@@ -27,7 +27,7 @@
   "repository": {
     "type": "git",
     "url": "https://github.com/baranwang/forward-widgets.git",
-    "directory": "packages/nsfw"
+    "directory": "apps/nsfw"
   },
   "publishConfig": {
     "provenance": true

@@ -1,7 +1,7 @@
+import { storage } from "@forward-widget/libs-storage";
 import { merge, omit } from "es-toolkit";
-import { qs } from "url-parse";
-import { storage } from "./storage";
-import { z } from "./zod";
+import { stringify as qsStringify } from "querystringify";
+import { z } from "zod";
 
 type BaseRequestOptions = NonNullable<Parameters<typeof Widget.http.get>[1]>;
 export interface RequestOptions<T extends z.ZodType | undefined = undefined>
@@ -187,7 +187,7 @@ export class Fetch {
 
     let finalUrl = url;
     if (params) {
-      finalUrl = `${url}?${qs.stringify(params)}`;
+      finalUrl = `${url}?${qsStringify(params)}`;
     }
 
     console.debug("⬆️ fetch", finalUrl, body ?? "", restOptions);
