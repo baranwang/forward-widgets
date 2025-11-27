@@ -1,5 +1,11 @@
 # @forward-widget/danmu-universe
 
+## 0.13.1
+
+### Patch Changes
+
+- 16c00cd: trakt 同步增加幂等校验
+
 ## 0.13.0
 
 ### Minor Changes
