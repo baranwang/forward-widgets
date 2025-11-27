@@ -150,43 +150,6 @@ importers:
         specifier: ^4.17.0
         version: 4.50.0
 
-  apps/trakt-history:
-    dependencies:
-      '@forward-widget/libs-fetch':
-        specifier: workspace:^
-        version: link:../../packages/fetch
-      '@forward-widget/libs-storage':
-        specifier: workspace:^
-        version: link:../../packages/storage
-      crypto-js:
-        specifier: ^4.2.0
-        version: 4.2.0
-      zod:
-        specifier: 4.0.17
-        version: 4.0.17
-    devDependencies:
-      '@forward-widget/libs':
-        specifier: ^2.1.0
-        version: 2.1.0
-      '@forward-widget/rslib-plugin':
-        specifier: ^2.1.0
-        version: 2.1.0
-      '@rslib/core':
-        specifier: ^0.18.2
-        version: 0.18.2(typescript@5.9.3)
-      '@rstest/core':
-        specifier: ^0.6.6
-        version: 0.6.6
-      '@types/crypto-js':
-        specifier: ^4.2.2
-        version: 4.2.2
-      '@types/node':
-        specifier: ^22.16.0
-        version: 22.17.1
-      typescript:
-        specifier: ^5.9.3
-        version: 5.9.3
-
   packages/fetch:
     dependencies:
       '@forward-widget/libs-storage':
