@@ -1,3 +1,5 @@
+import { Trakt } from "./trakt";
+
 WidgetMetadata = {
   id: "baranwang.history.trakt",
   title: "Trakt 历史同步",
@@ -24,10 +26,39 @@ WidgetMetadata = {
   modules: [
     {
       type: "danmu",
+      id: "getDetail",
+      title: "授权",
+      functionName: "authorize",
+      description: "授权",
+    },
+    {
+      type: "danmu",
       id: "searchDanmu",
       title: "同步播放",
       functionName: "syncPlay",
       description: "同步播放",
     },
   ],
+};
+
+authorize = async (params) => {
+  const trakt = new Trakt(params.traktClientId, params.traktClientSecret);
+
+  let name = "";
+
+  try {
+    const profile = await trakt.getProfile();
+    name = profile?.name || profile?.username || "";
+    await trakt.refreshToken();
+    console.log("登录成功", name);
+  } catch (error) {}
+
+  if (!name) {
+    await trakt.authorize();
+    const profile = await trakt.getProfile();
+    name = profile?.name || profile?.username || "";
+    console.log("登录成功", name);
+  }
+
+  return [];
 };
