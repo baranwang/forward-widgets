@@ -1,7 +1,22 @@
+import { z } from "zod";
 import { Fetch } from "../libs/fetch";
+import { storage, TTL_2_HOURS } from "../libs/storage";
 import type { GlobalParamsConfig } from "../scrapers/config";
 
 const TRAKT_API_KEY = "7100193031cd53fc7d2ec3eb22fe4162f30f0fb572d18c5b87fa1274c3dab80b";
+
+const paramsSchema = z.union([
+  z.object({
+    type: z.literal("movie"),
+    tmdbId: z.coerce.number(),
+  }),
+  z.object({
+    type: z.literal("tv"),
+    tmdbId: z.coerce.number(),
+    season: z.coerce.number(),
+    episode: z.coerce.number(),
+  }),
+]);
 
 export class Trakt {
   private readonly fetch = new Fetch();
@@ -15,34 +30,48 @@ export class Trakt {
     });
   }
 
-  syncHistory(params: SearchDanmuParams) {
+  async syncHistory(params: SearchDanmuParams) {
     const body: Record<string, unknown> = {};
-    if (!params.tmdbId) {
+
+    const { success, data: parsedParams } = paramsSchema.safeParse(params);
+    if (!success) {
       return;
     }
-    if (params.type === "movie") {
+
+    // 利用缓存做一个幂等
+    const idempotencyKey = ["trakt", "sync", "history", params.type, params.tmdbId, params.season, params.episode]
+      .filter(Boolean)
+      .join(":");
+    const cached = await storage.get(idempotencyKey);
+    if (cached) {
+      return;
+    }
+    await storage.set(idempotencyKey, "1", { ttl: TTL_2_HOURS });
+
+    const watchedAt = new Date().toISOString();
+    if (parsedParams.type === "movie") {
       body.movies = [
         {
-          watched_at: new Date().toISOString(),
+          watched_at: watchedAt,
           ids: {
-            tmdb: parseInt(params.tmdbId, 10),
+            tmdb: parsedParams.tmdbId,
           },
         },
       ];
     }
-    if (params.type === "tv" && params.season && params.episode) {
+    if (parsedParams.type === "tv") {
       body.shows = [
         {
           ids: {
-            tmdb: parseInt(params.tmdbId, 10),
+            tmdb: parsedParams.tmdbId,
           },
           seasons: [
             {
-              number: parseInt(params.season, 10),
+              number: parsedParams.season,
               episodes: [
                 {
-                  number: parseInt(params.episode, 10),
-                  watched_at: new Date().toISOString(),
+                  number: parsedParams.episode,
+                  watched_at: watchedAt,
                 },
               ],
             },
