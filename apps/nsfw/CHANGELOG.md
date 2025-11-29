@@ -1,5 +1,11 @@
 # @forward-widget/nsfw
 
+## 0.10.2
+
+### Patch Changes
+
+- 905b82e: 修复 xvideo 无法加载的问题
+
 ## 0.10.1
 
 ### Patch Changes

@@ -1,5 +1,11 @@
 # @forward-widget/danmu-universe
 
+## 0.13.2
+
+### Patch Changes
+
+- 7ff0151: 修复不支持 settimeout 的问题
+
 ## 0.13.1
 
 ### Patch Changes
