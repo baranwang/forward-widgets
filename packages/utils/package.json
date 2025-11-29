@@ -2,7 +2,6 @@
   "name": "@forward-widget/libs-utils",
   "version": "0.0.0",
   "type": "module",
-  "private": true,
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
