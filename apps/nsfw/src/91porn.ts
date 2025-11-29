@@ -69,6 +69,12 @@ WidgetMetadata = {
         },
       ],
     },
+    {
+      type: "stream",
+      id: "loadResource",
+      title: "加载资源",
+      functionName: "loadResource",
+    },
   ],
 };
 
@@ -227,4 +233,24 @@ loadDetail = async (url) => {
     console.error("Failed to load detail", error);
     return null as unknown as LoadDetailReturnType;
   }
+};
+
+loadResource = async (params) => {
+  const { id, link, videoUrl, base_url: baseUrl = DEFAULT_BASE_URL } = params;
+
+  const url = [id, link, videoUrl].find((item) => item?.startsWith(baseUrl));
+
+  if (!url) {
+    return [];
+  }
+
+  const result = await loadDetail(url);
+
+  return [
+    {
+      name: result.title,
+      description: result.description ?? "",
+      url: result.videoUrl,
+    },
+  ];
 };

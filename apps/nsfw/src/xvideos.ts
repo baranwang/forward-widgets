@@ -36,6 +36,96 @@ WidgetMetadata = {
   requiredVersion: "0.0.1",
   site: "https://github.com/baranwang/forward-widgets/tree/main/apps/nsfw",
   detailCacheDuration: 1,
+  globalParams: [
+    {
+      name: "region",
+      title: "地区",
+      type: "enumeration",
+      value: "cn",
+      enumOptions: [
+        { value: "cn", title: "中国大陆" },
+        { value: "id", title: "印度尼西亚" },
+        { value: "at", title: "奥地利" },
+        { value: "lk", title: "斯里兰卡" },
+        { value: "ch", title: "瑞士" },
+        { value: "es", title: "西班牙" },
+        { value: "dk", title: "丹麦" },
+        { value: "gt", title: "危地马拉" },
+        { value: "ve", title: "委内瑞拉" },
+        { value: "sg", title: "新加坡" },
+        { value: "pe", title: "秘鲁" },
+        { value: "vn", title: "越南" },
+        { value: "ua", title: "乌克兰" },
+        { value: "ec", title: "厄瓜多尔" },
+        { value: "bd", title: "孟加拉国" },
+        { value: "nz", title: "新西兰" },
+        { value: "tn", title: "突尼斯" },
+        { value: "az", title: "阿塞拜疆" },
+        { value: "ge", title: "乔治亚" },
+        { value: "tw", title: "台湾" },
+        { value: "pk", title: "巴基斯坦" },
+        { value: "jp", title: "日本" },
+        { value: "jo", title: "约旦" },
+        { value: "af", title: "阿富汗" },
+        { value: "il", title: "以色列" },
+        { value: "co", title: "哥伦比亚" },
+        { value: "br", title: "巴西" },
+        { value: "cl", title: "智利" },
+        { value: "mm", title: "缅甸" },
+        { value: "ar", title: "阿根廷" },
+        { value: "iq", title: "伊拉克" },
+        { value: "cm", title: "喀麦隆" },
+        { value: "gr", title: "希腊" },
+        { value: "kh", title: "柬埔寨" },
+        { value: "ro", title: "罗马尼亚" },
+        { value: "kr", title: "韩国" },
+        { value: "ru", title: "俄罗斯" },
+        { value: "tz", title: "坦桑尼亚" },
+        { value: "de", title: "德国" },
+        { value: "be", title: "比利时" },
+        { value: "us", title: "美国" },
+        { value: "hk", title: "香港" },
+        { value: "bg", title: "保加利亚" },
+        { value: "eg", title: "埃及" },
+        { value: "it", title: "意大利" },
+        { value: "fr", title: "法国" },
+        { value: "la", title: "老挝" },
+        { value: "my", title: "马来西亚" },
+        { value: "is", title: "冰岛" },
+        { value: "sn", title: "塞内加尔" },
+        { value: "lv", title: "拉脱维亚" },
+        { value: "pl", title: "波兰" },
+        { value: "ke", title: "肯尼亚" },
+        { value: "mt", title: "马耳他" },
+        { value: "ca", title: "加拿大" },
+        { value: "rs", title: "塞尔维亚" },
+        { value: "no", title: "挪威" },
+        { value: "th", title: "泰国" },
+        { value: "fi", title: "芬兰" },
+        { value: "lb", title: "黎巴嫩" },
+        { value: "hu", title: "匈牙利" },
+        { value: "cy", title: "塞浦路斯" },
+        { value: "cz", title: "捷克" },
+        { value: "au", title: "澳大利亚" },
+        { value: "gb", title: "英国" },
+        { value: "za", title: "南非" },
+        { value: "mx", title: "墨西哥" },
+        { value: "md", title: "摩尔多瓦" },
+        { value: "ie", title: "爱尔兰" },
+        { value: "nl", title: "荷兰" },
+        { value: "qa", title: "卡塔尔" },
+        { value: "do", title: "多明尼加" },
+        { value: "ma", title: "摩洛哥" },
+        { value: "bo", title: "玻利维亚" },
+        { value: "ph", title: "菲律宾" },
+        { value: "in", title: "印度" },
+        { value: "ng", title: "奈及利亚" },
+        { value: "sk", title: "斯洛伐克" },
+        { value: "se", title: "瑞典" },
+        { value: "pt", title: "葡萄牙" },
+      ],
+    },
+  ],
   modules: [
     {
       id: "xvideos.new",
@@ -43,94 +133,6 @@ WidgetMetadata = {
       description: "XVideos 最新视频",
       functionName: "getNewList",
       params: [
-        {
-          name: "region",
-          title: "地区",
-          type: "enumeration",
-          value: "cn",
-          enumOptions: [
-            { value: "cn", title: "中国大陆" },
-            { value: "id", title: "印度尼西亚" },
-            { value: "at", title: "奥地利" },
-            { value: "lk", title: "斯里兰卡" },
-            { value: "ch", title: "瑞士" },
-            { value: "es", title: "西班牙" },
-            { value: "dk", title: "丹麦" },
-            { value: "gt", title: "危地马拉" },
-            { value: "ve", title: "委内瑞拉" },
-            { value: "sg", title: "新加坡" },
-            { value: "pe", title: "秘鲁" },
-            { value: "vn", title: "越南" },
-            { value: "ua", title: "乌克兰" },
-            { value: "ec", title: "厄瓜多尔" },
-            { value: "bd", title: "孟加拉国" },
-            { value: "nz", title: "新西兰" },
-            { value: "tn", title: "突尼斯" },
-            { value: "az", title: "阿塞拜疆" },
-            { value: "ge", title: "乔治亚" },
-            { value: "tw", title: "台湾" },
-            { value: "pk", title: "巴基斯坦" },
-            { value: "jp", title: "日本" },
-            { value: "jo", title: "约旦" },
-            { value: "af", title: "阿富汗" },
-            { value: "il", title: "以色列" },
-            { value: "co", title: "哥伦比亚" },
-            { value: "br", title: "巴西" },
-            { value: "cl", title: "智利" },
-            { value: "mm", title: "缅甸" },
-            { value: "ar", title: "阿根廷" },
-            { value: "iq", title: "伊拉克" },
-            { value: "cm", title: "喀麦隆" },
-            { value: "gr", title: "希腊" },
-            { value: "kh", title: "柬埔寨" },
-            { value: "ro", title: "罗马尼亚" },
-            { value: "kr", title: "韩国" },
-            { value: "ru", title: "俄罗斯" },
-            { value: "tz", title: "坦桑尼亚" },
-            { value: "de", title: "德国" },
-            { value: "be", title: "比利时" },
-            { value: "us", title: "美国" },
-            { value: "hk", title: "香港" },
-            { value: "bg", title: "保加利亚" },
-            { value: "eg", title: "埃及" },
-            { value: "it", title: "意大利" },
-            { value: "fr", title: "法国" },
-            { value: "la", title: "老挝" },
-            { value: "my", title: "马来西亚" },
-            { value: "is", title: "冰岛" },
-            { value: "sn", title: "塞内加尔" },
-            { value: "lv", title: "拉脱维亚" },
-            { value: "pl", title: "波兰" },
-            { value: "ke", title: "肯尼亚" },
-            { value: "mt", title: "马耳他" },
-            { value: "ca", title: "加拿大" },
-            { value: "rs", title: "塞尔维亚" },
-            { value: "no", title: "挪威" },
-            { value: "th", title: "泰国" },
-            { value: "fi", title: "芬兰" },
-            { value: "lb", title: "黎巴嫩" },
-            { value: "hu", title: "匈牙利" },
-            { value: "cy", title: "塞浦路斯" },
-            { value: "cz", title: "捷克" },
-            { value: "au", title: "澳大利亚" },
-            { value: "gb", title: "英国" },
-            { value: "za", title: "南非" },
-            { value: "mx", title: "墨西哥" },
-            { value: "md", title: "摩尔多瓦" },
-            { value: "ie", title: "爱尔兰" },
-            { value: "nl", title: "荷兰" },
-            { value: "qa", title: "卡塔尔" },
-            { value: "do", title: "多明尼加" },
-            { value: "ma", title: "摩洛哥" },
-            { value: "bo", title: "玻利维亚" },
-            { value: "ph", title: "菲律宾" },
-            { value: "in", title: "印度" },
-            { value: "ng", title: "奈及利亚" },
-            { value: "sk", title: "斯洛伐克" },
-            { value: "se", title: "瑞典" },
-            { value: "pt", title: "葡萄牙" },
-          ],
-        },
         {
           name: "page",
           title: "页码",
@@ -389,12 +391,12 @@ const formatXVideosItem = (item: XVideosItem): VideoItem => {
   return childItem;
 };
 
-export async function getNewList(params: { region: string; page: string }) {
+const checkRegion = async (region: string) => {
   try {
     const currentRegion = await getStorageItem("xvideos.region");
-    if (currentRegion !== params.region) {
-      setStorageItem("xvideos.region", params.region);
-      const resp = await Widget.http.get(`${BASE_URL}/change-country/${params.region}`);
+    if (currentRegion !== region) {
+      setStorageItem("xvideos.region", region);
+      const resp = await Widget.http.get(`${BASE_URL}/change-country/${region}`);
       if (resp.headers["set-cookie"]) {
         const cookies = resp.headers["set-cookie"].split(";");
         for (const cookie of cookies) {
@@ -407,8 +409,12 @@ export async function getNewList(params: { region: string; page: string }) {
       }
     }
   } catch (error) {}
+};
 
-  const page = params.page ? Number.parseInt(params.page) : 0;
+getNewList = async (params) => {
+  checkRegion(params.region);
+
+  const page = params.page ? Number.parseInt(params.page, 10) : 0;
   let url = `${BASE_URL}/`;
   if (page > 0) {
     url += `new/${page}`;
@@ -438,10 +444,11 @@ export async function getNewList(params: { region: string; page: string }) {
     return result;
   });
   return list.filter((item) => item !== null);
-}
+};
 
-export async function getChannelList(params: { channel: string; page: string }) {
-  const page = params.page ? Number.parseInt(params.page) : 0;
+getChannelList = async (params) => {
+  const page = params.page ? Number.parseInt(params.page, 10) : 0;
+  checkRegion(params.region);
   try {
     const resp = await widgetAPI.get<{ videos: XVideosItem[] }>(
       `${BASE_URL}/channels/${params.channel}/videos/best/${page}`,
@@ -452,10 +459,11 @@ export async function getChannelList(params: { channel: string; page: string }) 
     console.error("频道视频加载失败", error);
     return [];
   }
-}
+};
 
-export async function getPornstarsList(params: { pornstar: string; page: string }) {
-  const page = params.page ? Number.parseInt(params.page) : 0;
+getPornstarsList = async (params) => {
+  const page = params.page ? Number.parseInt(params.page, 10) : 0;
+  checkRegion(params.region);
   try {
     const resp = await widgetAPI.get<{ videos: XVideosItem[] }>(
       `${BASE_URL}/pornstars/${params.pornstar}/videos/best/${page}`,
@@ -466,11 +474,11 @@ export async function getPornstarsList(params: { pornstar: string; page: string 
     console.error("色情明星视频加载失败", error);
     return [];
   }
-}
+};
 
 const VIDEO_URL_KEYWORDS = ["html5player.setVideoUrlHigh", "html5player.setVideoHLS", "html5player.setVideoUrlLow"];
 
-export async function loadDetail(url: string) {
+loadDetail = async (url: string) => {
   try {
     const $ = await widgetAPI.getHtml(url);
     const script = $("script").filter((_, el) => {
@@ -520,6 +528,6 @@ export async function loadDetail(url: string) {
     return result;
   } catch (error) {
     console.error("视频详情加载失败", error);
-    return null;
+    return null as unknown as any;
   }
-}
+};

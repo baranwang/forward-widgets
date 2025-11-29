@@ -2,6 +2,7 @@
   "name": "@forward-widget/libs-fetch",
   "version": "0.0.0",
   "type": "module",
+  "private": true,
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",

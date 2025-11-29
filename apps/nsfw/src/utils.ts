@@ -46,15 +46,9 @@ export class WidgetAPI {
 }
 
 export async function getStorageItem(key: string) {
-  return Promise.race([
-    Widget.storage.get(key),
-    new Promise((_, reject) => setTimeout(() => reject(new Error("timeout")), 1000)),
-  ]);
+  return Widget.storage.get(key);
 }
 
 export async function setStorageItem(key: string, value: string) {
-  return Promise.race([
-    Widget.storage.set(key, value),
-    new Promise((_, reject) => setTimeout(() => reject(new Error("timeout")), 1000)),
-  ]);
+  return Widget.storage.set(key, value);
 }
