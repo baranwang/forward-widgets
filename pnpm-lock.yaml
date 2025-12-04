@@ -30,6 +30,31 @@ importers:
         specifier: ^5.9.3
         version: 5.9.3
 
+  apps/bilibili:
+    dependencies:
+      '@forward-widget/libs-fetch':
+        specifier: workspace:^
+        version: link:../../packages/fetch
+      zod:
+        specifier: ^4.1.13
+        version: 4.1.13
+    devDependencies:
+      '@forward-widget/libs':
+        specifier: ^2.1.0
+        version: 2.1.0
+      '@forward-widget/rslib-plugin':
+        specifier: ^2.1.0
+        version: 2.1.0
+      '@rslib/core':
+        specifier: ^0.18.2
+        version: 0.18.2(typescript@5.9.3)
+      '@types/node':
+        specifier: ^22.16.0
+        version: 22.17.1
+      typescript:
+        specifier: ^5.8.3
+        version: 5.9.3
+
   apps/danmu-universe:
     dependencies:
       '@forward-widget/libs-fetch':
@@ -752,6 +777,9 @@ packages:
 
   '@forward-widget/libs@2.1.0':
     resolution: {integrity: sha512-kWRZEh6Nl4RT67bfoBe6KJHDqtO9G9iYGpeIyegNXxBdqRVCMWxGdVGRgEAlK/shbYCLN2WCeJmFToUSshc3KQ==}
+
+  '@forward-widget/rslib-plugin@2.1.0':
+    resolution: {integrity: sha512-yqLHD54RF9iv9PqPr0Zyj7X4MTLENlziy7BbUY8sEjzET4WC+EFieIwN0cRqi1EhBmy8l7h+6aIY9w4w4bkxAw==}
 
   '@hono/node-server@1.18.2':
     resolution: {integrity: sha512-icgNvC0vRYivzyuSSaUv9ttcwtN8fDyd1k3AOIBDJgYd84tXRZSS6na8X54CY/oYoFTNhEmZraW/Rb9XYwX4KA==}
@@ -3613,6 +3641,9 @@ packages:
   zod@4.0.17:
     resolution: {integrity: sha512-1PHjlYRevNxxdy2JZ8JcNAw7rX8V9P1AKkP+x/xZfxB0K5FYfuV+Ug6P/6NVSR2jHQ+FzDDoDHS04nYUsOIyLQ==}
 
+  zod@4.1.13:
+    resolution: {integrity: sha512-AvvthqfqrAhNH9dnfmrfKzX5upOdjUVJYFqNSlkmGf64gRaTzlPwz99IHYnVs28qYAybvAlBV+H7pn0saFY4Ig==}
+
 snapshots:
 
   '@ast-grep/napi-darwin-arm64@0.37.0':
@@ -4042,6 +4073,13 @@ snapshots:
   '@forward-widget/libs@2.1.0':
     dependencies:
       cheerio: 1.1.2
+
+  '@forward-widget/rslib-plugin@2.1.0':
+    dependencies:
+      '@hono/node-server': 1.18.2(hono@4.10.6)
+      es-toolkit: 1.39.9
+      hono: 4.10.6
+      ts-morph: 26.0.0
 
   '@hono/node-server@1.18.2(hono@4.10.6)':
     dependencies:
@@ -6905,3 +6943,5 @@ snapshots:
   zod@3.25.76: {}
 
   zod@4.0.17: {}
+
+  zod@4.1.13: {}

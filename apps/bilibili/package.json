@@ -1,0 +1,31 @@
+{
+  "name": "bilibili",
+  "version": "0.0.0",
+  "type": "module",
+  "private": true,
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "types": "./dist/index.d.ts",
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "rslib build",
+    "dev": "rslib build --watch"
+  },
+  "devDependencies": {
+    "@forward-widget/libs": "^2.1.0",
+    "@forward-widget/rslib-plugin": "^2.1.0",
+    "@rslib/core": "^0.18.2",
+    "@types/node": "^22.16.0",
+    "typescript": "^5.8.3"
+  },
+  "dependencies": {
+    "@forward-widget/libs-fetch": "workspace:^",
+    "zod": "^4.1.13"
+  }
+}
