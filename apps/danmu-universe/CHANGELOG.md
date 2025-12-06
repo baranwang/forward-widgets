@@ -1,5 +1,11 @@
 # @forward-widget/danmu-universe
 
+## 0.14.0
+
+### Minor Changes
+
+- d787c78: Forward 已具备原生 Trakt，插件移除 Trakt 同步能力
+
 ## 0.13.2
 
 ### Patch Changes
