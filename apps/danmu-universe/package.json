@@ -27,8 +27,8 @@
     "zod": "4.0.17"
   },
   "devDependencies": {
-    "@forward-widget/libs": "workspace:^",
-    "@forward-widget/rslib-plugin": "workspace:^",
+    "@forward-widget/libs": "2.1.0",
+    "@forward-widget/rslib-plugin": "2.1.0",
     "@rsdoctor/rspack-plugin": "^1.2.3",
     "@rslib/core": "^0.18.2",
     "@rstest/core": "^0.7.0",
