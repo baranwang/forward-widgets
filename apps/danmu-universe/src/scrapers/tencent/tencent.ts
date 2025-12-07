@@ -9,7 +9,7 @@ import {
   tencentSegmentSchema,
 } from "./schema";
 
-const pageSize = 100;
+const pageSize = 30;
 
 export class TencentScraper extends BaseScraper<typeof tencentIdSchema> {
   providerName = "tencent";
@@ -109,32 +109,44 @@ export class TencentScraper extends BaseScraper<typeof tencentIdSchema> {
     });
 
     const response = await this.fetch.post(
-      "https://pbaccess.video.qq.com/trpc.universal_backend_service.page_server_rpc.PageServer/GetPageData?video_appid=3000010&vplatform=2",
+      "https://pbaccess.video.qq.com/trpc.universal_backend_service.page_server_rpc.PageServer/GetPageData",
       {
         page_params: {
-          cid,
-          page_type: "detail_operation",
           page_id: "vsite_episode_list",
+          page_type: "detail_operation",
+          cid,
           id_type: "1",
-          page_size: pageSize.toString(),
-          lid: "0",
           req_from: "web_vsite",
           page_context: qs.stringify({
+            chapter_name: "",
             cid,
-            detail_page_type: "0",
+            detail_page_type: "1",
+            episode_begin: page * pageSize + 1,
+            episode_end: page * pageSize + pageSize,
+            episode_step: pageSize,
             id_type: "1",
-            is_nocopyright: "false",
-            is_skp_style: "false",
-            list_page_context: `page_context:pg=${page};`,
-            page_size: pageSize.toString(),
+            lid: "",
+            list_page_context: "",
+            mvl_strategy_id: "",
+            need_tab: "1",
+            order: "",
+            page_num: page,
+            page_size: pageSize,
             req_from: "web_vsite",
-            req_from_second_type: "detail_operation",
+            req_from_second_type: "",
             req_type: "0",
+            siteName: "",
+            sub_chapter_name: "",
+            tab_type: "1",
           }),
         },
         has_cache: 1,
       },
       {
+        params: {
+          video_appid: "3000010",
+          vplatform: "2",
+        },
         headers: {
           "Content-Type": "application/json",
         },
