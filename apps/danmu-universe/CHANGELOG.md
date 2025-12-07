@@ -1,5 +1,11 @@
 # @forward-widget/danmu-universe
 
+## 0.14.1
+
+### Patch Changes
+
+- 08eb8a3: 修复腾讯视频剧集分页加载失败的问题
+
 ## 0.14.0
 
 ### Minor Changes

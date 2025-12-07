@@ -50,7 +50,7 @@ namespace BaranwangDanmuUniverse {
 
 //#region searchDanmu
 /** Params of 搜索弹幕 */
-interface SearchDanmuParams extends BaranwangDanmuUniverse.GlobalParams, BaseParams {}
+interface SearchDanmuParams extends BaranwangDanmuUniverse.GlobalParams, BaseDanmuParams {}
 
 interface SearchDanmuReturnType {
   animes: Array<AnimeItem>;
@@ -67,7 +67,7 @@ declare let searchDanmu: (
 
 //#region getDetail
 /** Params of 获取详情 */
-interface GetDetailParams extends BaranwangDanmuUniverse.GlobalParams, BaseParams, AnimeItem {}
+interface GetDetailParams extends BaranwangDanmuUniverse.GlobalParams, BaseDanmuParams, AnimeItem {}
 
 interface GetDetailReturnType extends Array<GetDetailResponseItem> {}
 
@@ -80,7 +80,7 @@ declare let getDetail: (params: GetDetailParams) => GetDetailReturnType | null |
 
 //#region getComments
 /** Params of 获取弹幕 */
-interface GetCommentsParams extends BaranwangDanmuUniverse.GlobalParams, BaseParams, EpisodeItem {}
+interface GetCommentsParams extends BaranwangDanmuUniverse.GlobalParams, BaseDanmuParams, EpisodeItem {}
 
 interface GetCommentsReturnType extends GetCommentsResponse {}
 
@@ -95,7 +95,10 @@ declare let getComments: (
 
 //#region getDanmuWithSegmentTime
 /** Params of 获取弹幕切片 */
-interface GetCommentsParams extends BaranwangDanmuUniverse.GlobalParams, BaseParams, GetDanmuWithSegmentTimeParams {}
+interface GetCommentsParams
+  extends BaranwangDanmuUniverse.GlobalParams,
+    BaseDanmuParams,
+    GetDanmuWithSegmentTimeParams {}
 
 interface GetCommentsReturnType extends GetDanmuWithSegmentTimeResponse {}
 
