@@ -48,6 +48,7 @@
     "url": "https://github.com/baranwang/forward-widgets/issues/new?template=danmu-universe.md"
   },
   "publishConfig": {
+    "access": "public",
     "provenance": true
   },
   "license": "MIT"
