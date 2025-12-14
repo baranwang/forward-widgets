@@ -1,5 +1,11 @@
 # @forward-widget/danmu-universe
 
+## 0.14.2
+
+### Patch Changes
+
+- 6ed9b75: 修复腾讯视频抢先看获取失败的问题
+
 ## 0.14.1
 
 ### Patch Changes
