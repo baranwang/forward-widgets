@@ -131,7 +131,7 @@ export class TencentScraper extends BaseScraper<typeof tencentIdSchema> {
             need_tab: "1",
             order: "",
             page_num: page,
-            page_size: pageSize,
+            page_size: pageSize + 4,
             req_from: "web_vsite",
             req_from_second_type: "",
             req_type: "0",
