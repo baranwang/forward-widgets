@@ -177,8 +177,7 @@ export class TencentScraper extends BaseScraper<typeof tencentIdSchema> {
       return this.getEpisodesPage(cid);
     }
 
-    // 计算当前分集可能在的页码
-    const page = Math.floor((episodeNumber ?? 1) / pageSize);
+    const page = Math.floor((episodeNumber - 1) / pageSize);
     const episodes = await this.getEpisodesPage(cid, page);
     if (episodes.find((ep) => ep.episodeNumber === episodeNumber)) {
       return episodes;
