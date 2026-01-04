@@ -1,5 +1,11 @@
 # @forward-widget/danmu-universe
 
+## 0.14.3
+
+### Patch Changes
+
+- b69c89a: 修正腾讯视频剧集页码计算逻辑并更新测试用例
+
 ## 0.14.2
 
 ### Patch Changes
