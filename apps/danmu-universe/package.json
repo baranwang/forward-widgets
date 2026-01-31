@@ -4,8 +4,8 @@
   "type": "module",
   "main": "./dist/danmu-universe.js",
   "exports": {
-    "default": "./dist/danmu-universe.js",
-    "lite": "./dist/danmu-universe.lite.js"
+    ".": "./dist/danmu-universe.js",
+    "./lite": "./dist/danmu-universe.lite.js"
   },
   "files": [
     "dist"
