@@ -27,6 +27,11 @@ namespace BaranwangDanmuUniverse {
         /** 弹幕内容过滤 */
         'global.content.blacklist': string;
         /**
+         * 弹幕内容繁简转换
+         * @default 'original'
+         */
+        'global.content.conversion': 'original' | 'tc2sc' | 'sc2tc';
+        /**
          * [人人视频] 弹幕模式
          * @description 弹幕模式，精选弹幕相比默认弹幕质量更高
          * @default 'default'

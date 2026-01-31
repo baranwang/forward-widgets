@@ -5,9 +5,6 @@ import pkg from "./package.json";
 
 export default defineConfig({
   source: {
-    entry: {
-      "danmu-universe": "./src/index.ts",
-    },
     define: {
       "process.env.PACKAGE_VERSION": JSON.stringify(pkg.version),
       "process.env.NODE_ENV": JSON.stringify(process.env.NODE_ENV),
@@ -20,6 +17,28 @@ export default defineConfig({
       syntax: "es6",
       bundle: true,
       autoExternal: false,
+      source: {
+        entry: {
+          "danmu-universe": "./src/index.ts",
+        },
+        define: {
+          LITE_VERSION: false,
+        },
+      },
+    },
+    {
+      format: "esm",
+      syntax: "es6",
+      bundle: true,
+      autoExternal: false,
+      source: {
+        entry: {
+          "danmu-universe.lite": "./src/index.ts",
+        },
+        define: {
+          LITE_VERSION: true,
+        },
+      },
     },
   ],
   output: {
@@ -28,7 +47,7 @@ export default defineConfig({
       jsOptions: {
         minimizerOptions: {
           mangle: true,
-          minify: true,
+          minify: false,
           compress: true,
           format: {
             comments: false,

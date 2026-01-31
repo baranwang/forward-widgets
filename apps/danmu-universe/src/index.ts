@@ -128,6 +128,32 @@ WidgetMetadata = {
       type: "input",
     },
     {
+      title: "弹幕内容繁简转换",
+      name: "global.content.conversion",
+      value: "original",
+      type: "enumeration",
+      belongTo: LITE_VERSION
+        ? {
+            paramName: "__LITE_VERSION_FLAG__",
+            value: ["false"],
+          }
+        : undefined,
+      enumOptions: [
+        {
+          title: "原始",
+          value: "original",
+        },
+        {
+          title: "繁体 -> 简体",
+          value: "tc2sc",
+        },
+        {
+          title: "簡體 -> 正體",
+          value: "sc2tc",
+        },
+      ],
+    },
+    {
       title: `[${PROVIDER_NAMES.renren}] 弹幕模式`,
       name: "provider.renren.mode",
       description: "弹幕模式，精选弹幕相比默认弹幕质量更高",

@@ -35,6 +35,27 @@ export class Scraper {
     });
   }
 
+  get conversionConverter() {
+    if (!LITE_VERSION) {
+      const openCC = require("opencc-js") as typeof import("opencc-js");
+      const conversionConfig = this.globalParams.global.content.conversion;
+      if (conversionConfig === "tc2sc") {
+        return openCC.Converter({
+          from: "t",
+          to: "cn",
+        });
+      }
+      if (conversionConfig === "sc2tc") {
+        return openCC.Converter({
+          from: "cn",
+          to: "t",
+        });
+      }
+      return null;
+    }
+    return null;
+  }
+
   /**
    * 获取 provider 名称到 scraper 实例的映射
    * 使用懒加载和缓存提升性能
@@ -87,6 +108,7 @@ export class Scraper {
     segmentTime = 0,
     ...args: { provider: string; idString: string }[]
   ): Promise<CommentItem[]> {
+    const conversionConverter = this.conversionConverter;
     const tasks = args.map(async ({ provider, idString }) => {
       try {
         const segments = await this.getSegmentsByProvider(provider, idString);
@@ -140,7 +162,10 @@ export class Scraper {
       if (blacklistRegexp?.test(item.content)) {
         return;
       }
-      const content = count > 1 ? `${item.content} × ${count}` : item.content;
+      let content = count > 1 ? `${item.content} × ${count}` : item.content;
+      if (conversionConverter) {
+        content = conversionConverter(content);
+      }
       comments.push({
         cid: item.id,
         p: `${item.timestamp.toFixed(2)},${item.mode},${item.color},[${provider}]` as CommentItem["p"],

@@ -4,7 +4,8 @@
   "type": "module",
   "main": "./dist/danmu-universe.js",
   "exports": {
-    "default": "./dist/danmu-universe.js"
+    "default": "./dist/danmu-universe.js",
+    "lite": "./dist/danmu-universe.lite.js"
   },
   "files": [
     "dist"
@@ -22,6 +23,7 @@
     "date-fns": "^4.1.0",
     "es-toolkit": "^1.39.9",
     "fast-xml-parser": "^5.2.5",
+    "opencc-js": "^1.0.5",
     "protobufjs": "^7.5.4",
     "url-parse": "^1.5.10",
     "zod": "4.0.17"
@@ -34,6 +36,7 @@
     "@rstest/core": "^0.7.0",
     "@types/crypto-js": "^4.2.2",
     "@types/node": "^22.16.0",
+    "@types/opencc-js": "^1.0.3",
     "@types/url-parse": "^1.4.11",
     "rsbuild-plugin-protobufjs": "^0.0.0",
     "type-fest": "^4.41.0",

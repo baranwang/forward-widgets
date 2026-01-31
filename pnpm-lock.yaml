@@ -53,6 +53,9 @@ importers:
       fast-xml-parser:
         specifier: ^5.2.5
         version: 5.2.5
+      opencc-js:
+        specifier: ^1.0.5
+        version: 1.0.5
       protobufjs:
         specifier: ^7.5.4
         version: 7.5.4
@@ -84,6 +87,9 @@ importers:
       '@types/node':
         specifier: ^22.16.0
         version: 22.17.1
+      '@types/opencc-js':
+        specifier: ^1.0.3
+        version: 1.0.3
       '@types/url-parse':
         specifier: ^1.4.11
         version: 1.4.11
@@ -798,6 +804,9 @@ packages:
 
   '@types/node@24.10.1':
     resolution: {integrity: sha512-GNWcUTRBgIRJD5zj+Tq0fKOJ5XZajIiBroOF0yvj2bSU1WvNdYS/dn9UxwsujGW4JX06dnHyjV2y9rRaybH0iQ==}
+
+  '@types/opencc-js@1.0.3':
+    resolution: {integrity: sha512-TENp7YkI2hNlc4dplhivSHj0hU4DORCK56VY7rniaSfA5f87uD3uv+kPIRuH9h64TGv976iVFi4gEHZZtS2y8Q==}
 
   '@types/querystringify@2.0.2':
     resolution: {integrity: sha512-7d6OQK6pJ//zE32XLK3vI6GHYhBDcYooaRco9cKFGNu59GVatL5+u7rkiAViq44DxDTd/7QQNBWSDHfJGBz/Pw==}
@@ -1549,6 +1558,9 @@ packages:
   open@8.4.2:
     resolution: {integrity: sha512-7x81NCL719oNbsq/3mh+hVrAWmFuEYUqrq/Iw3kUzH8ReypT9QQ0BLoJS7/G9k6N81XjW4qHWtjWwe/9eLy1EQ==}
     engines: {node: '>=12'}
+
+  opencc-js@1.0.5:
+    resolution: {integrity: sha512-LD+1SoNnZdlRwtYTjnQdFrSVCAaYpuDqL5CkmOaHOkKoKh7mFxUicLTRVNLU5C+Jmi1vXQ3QL4jWdgSaa4sKjg==}
 
   optionator@0.8.3:
     resolution: {integrity: sha512-+IW9pACdk3XWmmTXG8m3upGUJst5XRGzxMRjXzAuJ1XnIFNvfhjjIuYkDvysnPQ7qzqVzLt78BCruntqRhWQbA==}
@@ -2812,6 +2824,8 @@ snapshots:
     dependencies:
       undici-types: 7.16.0
 
+  '@types/opencc-js@1.0.3': {}
+
   '@types/querystringify@2.0.2': {}
 
   '@types/tapable@2.2.7':
@@ -3543,6 +3557,8 @@ snapshots:
       define-lazy-prop: 2.0.0
       is-docker: 2.2.1
       is-wsl: 2.2.0
+
+  opencc-js@1.0.5: {}
 
   optionator@0.8.3:
     dependencies:
