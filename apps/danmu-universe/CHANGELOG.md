@@ -1,5 +1,12 @@
 # @forward-widget/danmu-universe
 
+## 0.15.0
+
+### Minor Changes
+
+- 2a194ad: 新增弹幕内容繁简转换能力，默认关闭，仅在完整版中生效
+    - 因简繁转换能力引用本地字典，导致代码体积增加，可能会增加内存消耗，如果没有此需要的，可以安装 lite 版本
+
 ## 0.14.3
 
 ### Patch Changes
