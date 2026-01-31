@@ -1,11 +1,19 @@
 # @forward-widget/danmu-universe
 
+## 0.15.1
+
+### Patch Changes
+
+- e30c481: refactor: 优化简繁转换打包体积
+  - 调整打包策略，通过 Tree Shaking 在 Lite 版本完全移除 opencc-js 依赖
+  - 修正 package.json exports 配置，现在可以通过 `/lite` 子路径正确访问精简版
+
 ## 0.15.0
 
 ### Minor Changes
 
 - 2a194ad: 新增弹幕内容繁简转换能力，默认关闭，仅在完整版中生效
-    - 因简繁转换能力引用本地字典，导致代码体积增加，可能会增加内存消耗，如果没有此需要的，可以安装 lite 版本
+  - 因简繁转换能力引用本地字典，导致代码体积增加，可能会增加内存消耗，如果没有此需要的，可以安装 lite 版本
 
 ## 0.14.3
 
