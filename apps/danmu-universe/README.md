@@ -25,10 +25,16 @@
 
 在Forward Widget的模块管理中导入以下URL：
 
-```bash
-https://unpkg.com/@forward-widget/danmu-universe # 完整版
+#### 完整版
 
-https://unpkg.com/@forward-widget/danmu-universe/lite # 精简版
+```
+https://unpkg.com/@forward-widget/danmu-universe 
+```
+
+#### 精简版
+
+```
+https://unpkg.com/@forward-widget/danmu-universe/lite 
 ```
 
 ## 开发
